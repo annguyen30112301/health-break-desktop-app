@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      user-select: none;
+    }
+    .popup {
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      animation: slideIn 0.25s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(16px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+    .content { flex: 1; }
+    .title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 3px; }
+    .body  { font-size: 12px; color: #666; line-height: 1.4; }
+    .queue-badge {
+      display: none;
+      font-size: 11px;
+      background: #f5f5f5;
+      border: 1px solid #eee;
+      border-radius: 20px;
+      padding: 2px 8px;
+      color: #888;
+      margin-top: 5px;
+    }
+    .queue-badge.visible { display: inline-block; }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 16px;
+      color: #bbb;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .btn-close:hover { color: #888; }
+  </style>
+</head>
+<body>
+  <div class="popup">
+    <div class="icon" id="icon">💧</div>
+    <div class="content">
+      <div class="title" id="title">Uống nước</div>
+      <div class="body"  id="body">Đã đến giờ uống nước rồi!</div>
+      <div class="queue-badge" id="queue-badge"></div>
+    </div>
+    <button class="btn-close" onclick="closePopup()">✕</button>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron')
+
+    const ICONS  = { water: '💧', move: '🏃', eyes: '👁️' }
+
+    let currentKey = null
+
+    ipcRenderer.on('popup-data', (event, data) => {
+      currentKey = data.key
+      document.getElementById('icon').textContent  = ICONS[data.key]
+      document.getElementById('title').textContent = data.title
+      document.getElementById('body').textContent  = data.body
+
+      const badge = document.getElementById('queue-badge')
+      if (data.queueCount > 0) {
+        badge.textContent = `+${data.queueCount} nhắc nhở đang chờ`
+        badge.classList.add('visible')
+      } else {
+        badge.classList.remove('visible')
+      }
+    })
+
+    function closePopup() {
+      ipcRenderer.send('close-popup', currentKey)
+    }
+  </script>
+</body>
+</html>

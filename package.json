@@ -1,0 +1,73 @@
+{
+  "name": "healthbreak",
+  "version": "1.0.0",
+  "description": "Periodic health reminders — drink water, light exercise, eye rest",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "setup:wincodecsign": "node scripts/setup-wincodecsign.js",
+    "build:win": "npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
+    "build:win:dir": "npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win dir",
+    "build:mac": "electron-builder --mac",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^41.1.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.healthbreak.app",
+    "productName": "HealthBreak",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "popup.html",
+      "app-icon.png",
+      "tray-icon.png",
+      "package.json",
+      "locales/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "app-icon.png",
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "app-icon.png",
+      "category": "public.app-category.healthcare-fitness"
+    },
+    "dmg": {
+      "title": "HealthBreak ${version}"
+    }
+  }
+}

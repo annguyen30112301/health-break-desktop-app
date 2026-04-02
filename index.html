@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HealthBreak</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: #f8f8f6;
+      color: #1a1a1a;
+      padding: 24px;
+      user-select: none;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #888; }
+
+    /* ── Language switcher ───────────────────────────────────────── */
+    .lang-switcher { display: flex; gap: 4px; flex-shrink: 0; margin-top: 2px; }
+    .lang-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #aaa;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lang-btn:hover { border-color: #4CAF50; color: #4CAF50; }
+    .lang-btn.active { background: #4CAF50; border-color: #4CAF50; color: white; }
+
+    /* ── Testing mode badge ──────────────────────────────────────── */
+    .testing-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #f57f17;
+      font-weight: 600;
+    }
+    .testing-badge.visible { display: flex; }
+    .testing-badge .dot {
+      width: 8px; height: 8px;
+      background: #f57f17;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+      flex-shrink: 0;
+    }
+    .testing-badge .btn-exit-test {
+      margin-left: auto;
+      background: none;
+      border: 1px solid #f57f17;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #f57f17;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .testing-badge .btn-exit-test:hover { background: #fff3e0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Cards ───────────────────────────────────────────────────── */
+    .card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: box-shadow 0.2s;
+    }
+    .card.expanded { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .card-top { display: flex; align-items: center; gap: 14px; }
+    .card-icon { font-size: 24px; width: 44px; text-align: center; flex-shrink: 0; }
+    .card-name { flex: 1; font-size: 14px; font-weight: 600; }
+    /* desc sits below the flex row — full width minus icon indent */
+    .card-desc {
+      margin-top: 5px;
+      padding-left: 58px; /* 44px icon + 14px gap */
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+    }
+    .card-timer { font-size: 13px; font-weight: 600; color: #555; min-width: 48px; text-align: right; flex-shrink: 0; }
+
+    .btn-edit {
+      background: none;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-edit:hover { border-color: #4CAF50; color: #4CAF50; }
+    .btn-edit.active { border-color: #4CAF50; color: #4CAF50; background: #f0faf0; }
+
+    .toggle {
+      width: 40px; height: 22px;
+      background: #4CAF50;
+      border-radius: 11px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle.off { background: #ccc; }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 2px; right: 2px;
+      transition: transform 0.2s;
+    }
+    .toggle.off::after { transform: translateX(-18px); }
+
+    /* ── Expandable settings panel ───────────────────────────────── */
+    .card-expand {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.25s ease, opacity 0.25s ease;
+      opacity: 0;
+    }
+    .card-expand.open { max-height: 130px; opacity: 1; }
+    .expand-inner {
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+      margin-top: 10px;
+    }
+    .expand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .slider-label { font-size: 11px; color: #aaa; min-width: 26px; }
+    .slider-label.right { text-align: right; }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: #e0e0e0;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { background: #43A047; }
+    .slider-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4CAF50;
+      min-width: 52px;
+      text-align: center;
+    }
+    .btn-save {
+      width: 100%;
+      padding: 8px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-save:hover { background: #43A047; }
+    .btn-save:active { background: #388E3C; }
+
+    /* ── Status bar ──────────────────────────────────────────────── */
+    .status-bar {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #555;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .status-bar span { color: #4CAF50; font-weight: 600; }
+
+    #logo { cursor: default; display: inline; }
+    #logo.clickable { cursor: pointer; }
+
+    /* ── Info button ─────────────────────────────────────────────── */
+    .btn-info {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid #ccc;
+      background: none;
+      color: #aaa;
+      font-size: 11px;
+      font-style: italic;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .btn-info:hover { border-color: #4CAF50; color: #4CAF50; background: #f0faf0; }
+
+    /* ── Info modal ──────────────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 14px;
+      width: 390px;
+      max-height: 480px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-shrink: 0;
+    }
+    .modal-header-icon { font-size: 22px; }
+    .modal-header-title { flex: 1; font-size: 15px; font-weight: 700; color: #1a1a1a; }
+    .btn-modal-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #aaa;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .btn-modal-close:hover { color: #555; }
+    .modal-body {
+      overflow-y: auto;
+      padding: 14px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .modal-section.benefits .modal-section-title { color: #2e7d32; }
+    .modal-section.risks    .modal-section-title { color: #e65100; }
+    .modal-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .modal-section ul li {
+      font-size: 12.5px;
+      color: #444;
+      line-height: 1.5;
+      padding: 8px 10px;
+      border-radius: 7px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .modal-section.benefits ul li { background: #f1f8f1; }
+    .modal-section.risks    ul li { background: #fff8f3; }
+    .modal-section.benefits ul li::before { content: '✓'; color: #4CAF50; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .modal-section.risks    ul li::before { content: '!'; color: #e65100; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<div class="header">
+  <div>
+    <h1><span id="logo" onclick="handleLogoClick()">💚</span> HealthBreak</h1>
+    <p class="subtitle" id="app-subtitle"></p>
+  </div>
+  <div class="lang-switcher">
+    <button id="btn-lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
+    <button id="btn-lang-vi" class="lang-btn" onclick="setLanguage('vi')">VI</button>
+  </div>
+</div>
+
+<!-- ── Testing mode badge ───────────────────────────────────────────────── -->
+<div class="testing-badge" id="testing-badge">
+  <div class="dot"></div>
+  <span id="testing-text"></span>
+  <button class="btn-exit-test" id="btn-exit-test" onclick="exitTestingMode()"></button>
+</div>
+
+<!-- ── Drink Water ──────────────────────────────────────────────────────── -->
+<div class="card" id="card-water">
+  <div class="card-top">
+    <div class="card-icon">💧</div>
+    <div class="card-name" id="card-name-water"></div>
+    <button class="btn-info" onclick="openInfoModal('water')" title="Info">i</button>
+    <div class="card-timer" id="timer-water">30:00</div>
+    <button class="btn-edit" id="edit-water" onclick="toggleEdit('water')"></button>
+    <div class="toggle" id="toggle-water" onclick="toggleReminder('water')"></div>
+  </div>
+  <div class="card-desc" id="desc-water"></div>
+  <div class="card-expand" id="expand-water">
+    <div class="expand-inner">
+      <div class="expand-row">
+        <span class="slider-label" id="min-label-water"></span>
+        <input type="range" id="slider-water" min="20" max="60" step="5" value="30"
+          oninput="onSliderChange('water', this.value)">
+        <span class="slider-label right" id="max-label-water"></span>
+        <span class="slider-value" id="val-water"></span>
+      </div>
+      <button class="btn-save" id="save-water" onclick="saveAndRestart('water')"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Light Exercise ───────────────────────────────────────────────────── -->
+<div class="card" id="card-move">
+  <div class="card-top">
+    <div class="card-icon">🏃</div>
+    <div class="card-name" id="card-name-move"></div>
+    <button class="btn-info" onclick="openInfoModal('move')" title="Info">i</button>
+    <div class="card-timer" id="timer-move">60:00</div>
+    <button class="btn-edit" id="edit-move" onclick="toggleEdit('move')"></button>
+    <div class="toggle" id="toggle-move" onclick="toggleReminder('move')"></div>
+  </div>
+  <div class="card-desc" id="desc-move"></div>
+  <div class="card-expand" id="expand-move">
+    <div class="expand-inner">
+      <div class="expand-row">
+        <span class="slider-label" id="min-label-move"></span>
+        <input type="range" id="slider-move" min="45" max="90" step="5" value="60"
+          oninput="onSliderChange('move', this.value)">
+        <span class="slider-label right" id="max-label-move"></span>
+        <span class="slider-value" id="val-move"></span>
+      </div>
+      <button class="btn-save" id="save-move" onclick="saveAndRestart('move')"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Eye Rest ─────────────────────────────────────────────────────────── -->
+<div class="card" id="card-eyes">
+  <div class="card-top">
+    <div class="card-icon">👁️</div>
+    <div class="card-name" id="card-name-eyes"></div>
+    <button class="btn-info" onclick="openInfoModal('eyes')" title="Info">i</button>
+    <div class="card-timer" id="timer-eyes">20:00</div>
+    <button class="btn-edit" id="edit-eyes" onclick="toggleEdit('eyes')"></button>
+    <div class="toggle" id="toggle-eyes" onclick="toggleReminder('eyes')"></div>
+  </div>
+  <div class="card-desc" id="desc-eyes"></div>
+  <div class="card-expand" id="expand-eyes">
+    <div class="expand-inner">
+      <div class="expand-row">
+        <span class="slider-label" id="min-label-eyes"></span>
+        <input type="range" id="slider-eyes" min="15" max="30" step="5" value="20"
+          oninput="onSliderChange('eyes', this.value)">
+        <span class="slider-label right" id="max-label-eyes"></span>
+        <span class="slider-value" id="val-eyes"></span>
+      </div>
+      <button class="btn-save" id="save-eyes" onclick="saveAndRestart('eyes')"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Auto-launch ──────────────────────────────────────────────────────── -->
+<div class="card" style="margin-bottom: 12px;">
+  <div class="card-top">
+    <div class="card-icon">⚙️</div>
+    <div class="card-name" id="autolaunch-name"></div>
+    <div class="toggle" id="toggle-autolaunch" onclick="toggleAutoLaunch()"></div>
+  </div>
+  <div class="card-desc" id="autolaunch-desc"></div>
+</div>
+
+<div class="status-bar" id="status"></div>
+
+<!-- ── Info modal ────────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="onBackdropClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-header-icon" id="modal-icon"></div>
+      <div class="modal-header-title" id="modal-title"></div>
+      <button class="btn-modal-close" onclick="closeInfoModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section benefits">
+        <div class="modal-section-title" id="modal-benefits-title"></div>
+        <ul id="modal-benefits-list"></ul>
+      </div>
+      <div class="modal-section risks">
+        <div class="modal-section-title" id="modal-risks-title"></div>
+        <ul id="modal-risks-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { ipcRenderer } = require('electron')
+
+  // ── Localization ─────────────────────────────────────────────────────────
+  const LANG_KEY  = 'healthbreak-lang'
+  let currentLang = localStorage.getItem(LANG_KEY) || 'en'
+  let locale      = (() => {
+    try { return require(`./locales/${currentLang}.js`) }
+    catch { return require('./locales/en.js') }
+  })()
+
+  function setLanguage(lang) {
+    if (lang === currentLang) return
+    currentLang = lang
+    locale = require(`./locales/${lang}.js`)
+    localStorage.setItem(LANG_KEY, lang)
+    applyLocale()
+    ipcRenderer.send('set-language', lang)
+  }
+
+  function applyLocale() {
+    // Subtitle
+    document.getElementById('app-subtitle').textContent = locale.subtitle
+
+    // Testing badge
+    document.getElementById('testing-text').textContent   = locale.testing.badge
+    document.getElementById('btn-exit-test').textContent  = locale.testing.exit
+
+    // Reminder cards
+    ;['water', 'move', 'eyes'].forEach(key => {
+      const r    = reminders[key]
+      const locR = locale.reminders[key]
+
+      // Keep reminder label/body in sync for popup notifications
+      r.label = locR.name
+      r.body  = locR.body
+
+      const minutes = r.interval / 60
+      const limits  = isTestingMode ? TESTING_LIMITS[key] : NORMAL_LIMITS[key]
+
+      document.getElementById(`card-name-${key}`).textContent  = locR.name
+      document.getElementById(`desc-${key}`).innerHTML         = locR.desc(minutes)
+      document.getElementById(`val-${key}`).textContent        = `${minutes} ${locale.minFull}`
+      document.getElementById(`edit-${key}`).textContent       = locale.editBtn
+      document.getElementById(`save-${key}`).textContent       = locale.saveBtn
+      document.getElementById(`min-label-${key}`).textContent  = `${limits.min}${locale.minShort}`
+      document.getElementById(`max-label-${key}`).textContent  = `${NORMAL_LIMITS[key].max}${locale.minShort}`
+    })
+
+    // Auto-launch card
+    document.getElementById('autolaunch-name').textContent = locale.autoLaunch.name
+    document.getElementById('autolaunch-desc').textContent = locale.autoLaunch.desc
+
+    // Language switcher active state
+    document.getElementById('btn-lang-en').classList.toggle('active', currentLang === 'en')
+    document.getElementById('btn-lang-vi').classList.toggle('active', currentLang === 'vi')
+
+    // Status bar
+    updateStatus()
+
+    // Re-render modal content if it's currently open (language switch)
+    if (currentInfoKey) renderInfoModal()
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Feature flag ─────────────────────────────────────────────────────────
+  const TESTING_MODE_ENABLED = true
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Audio ─────────────────────────────────────────────────────────────────
+  function playSound(key) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      ctx.resume().then(() => {
+        const s = { water: { freq: 520, pulses: 2 }, move: { freq: 440, pulses: 3 }, eyes: { freq: 660, pulses: 1 } }[key]
+        for (let i = 0; i < s.pulses; i++) {
+          const osc  = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = 'sine'
+          osc.frequency.value = s.freq
+          const start = ctx.currentTime + i * 0.25
+          const end   = start + 0.15
+          gain.gain.setValueAtTime(0, start)
+          gain.gain.linearRampToValueAtTime(0.4, start + 0.01)
+          gain.gain.linearRampToValueAtTime(0, end)
+          osc.start(start)
+          osc.stop(end + 0.05)
+        }
+        setTimeout(() => ctx.close(), s.pulses * 300 + 500)
+      })
+    } catch (e) {
+      console.warn('Audio error:', e)
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Interval limits ───────────────────────────────────────────────────────
+  const NORMAL_LIMITS = {
+    water: { min: 20, max: 60, default: 30 },
+    move:  { min: 45, max: 90, default: 60 },
+    eyes:  { min: 15, max: 30, default: 20 },
+  }
+  const TESTING_LIMITS = {
+    water: { min: 1, max: 60, default: 30 },
+    move:  { min: 1, max: 90, default: 60 },
+    eyes:  { min: 1, max: 30, default: 20 },
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  let isTestingMode  = false
+  let logoClickCount = 0
+  let logoClickTimer = null
+
+  // ── Reminder data (labels pulled from locale at startup) ──────────────────
+  const reminders = {
+    water: {
+      label: locale.reminders.water.name,
+      body:  locale.reminders.water.body,
+      interval: 30 * 60, remaining: 30 * 60,
+      active: true, timer: null, pendingInterval: 30 * 60,
+    },
+    move: {
+      label: locale.reminders.move.name,
+      body:  locale.reminders.move.body,
+      interval: 60 * 60, remaining: 60 * 60,
+      active: true, timer: null, pendingInterval: 60 * 60,
+    },
+    eyes: {
+      label: locale.reminders.eyes.name,
+      body:  locale.reminders.eyes.body,
+      interval: 20 * 60, remaining: 20 * 60,
+      active: true, timer: null, pendingInterval: 20 * 60,
+    },
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Testing mode ──────────────────────────────────────────────────────────
+  function handleLogoClick() {
+    if (!TESTING_MODE_ENABLED) return
+    logoClickCount++
+    clearTimeout(logoClickTimer)
+    logoClickTimer = setTimeout(() => { logoClickCount = 0 }, 3000)
+    if (logoClickCount >= 10) {
+      logoClickCount = 0
+      clearTimeout(logoClickTimer)
+      enterTestingMode()
+    }
+  }
+
+  function enterTestingMode() {
+    isTestingMode = true
+    document.getElementById('testing-badge').classList.add('visible')
+    Object.keys(reminders).forEach(key => {
+      const limits = TESTING_LIMITS[key]
+      const slider = document.getElementById(`slider-${key}`)
+      slider.min = limits.min
+      document.getElementById(`min-label-${key}`).textContent = `${limits.min}${locale.minShort}`
+    })
+  }
+
+  function exitTestingMode() {
+    isTestingMode = false
+    document.getElementById('testing-badge').classList.remove('visible')
+    Object.keys(reminders).forEach(key => {
+      const limits = NORMAL_LIMITS[key]
+      const slider = document.getElementById(`slider-${key}`)
+      if (parseInt(slider.value) < limits.min) {
+        slider.value = limits.default
+        const r = reminders[key]
+        r.pendingInterval = limits.default * 60
+        r.interval        = r.pendingInterval
+        r.remaining       = r.interval
+        document.getElementById(`val-${key}`).textContent   = `${limits.default} ${locale.minFull}`
+        document.getElementById(`desc-${key}`).innerHTML    = locale.reminders[key].desc(limits.default)
+        document.getElementById(`timer-${key}`).textContent = formatTime(r.interval)
+        if (r.active) startTimer(key)
+      }
+      slider.min = limits.min
+      document.getElementById(`min-label-${key}`).textContent = `${limits.min}${locale.minShort}`
+    })
+    saveSettings()
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── IPC listeners (registered once) ──────────────────────────────────────
+  ipcRenderer.on('pause-timer', (event, key) => {
+    const r = reminders[key]
+    if (r && r.timer) { clearInterval(r.timer); r.timer = null }
+  })
+
+  ipcRenderer.on('popup-closed', (event, key) => {
+    const r = reminders[key]
+    if (!r) return
+    r.remaining = r.interval
+    document.getElementById(`timer-${key}`).textContent = formatTime(r.interval)
+    if (r.active) startTimer(key)
+  })
+  // ────────────────────────────────────────────────────────────────────────
+
+  function sendNotification(key) {
+    const r = reminders[key]
+    ipcRenderer.send('show-popup', { key, title: r.label, body: r.body })
+    playSound(key)
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  function startTimer(key) {
+    const r = reminders[key]
+    if (r.timer) clearInterval(r.timer)
+    r.timer = setInterval(() => {
+      if (r.remaining <= 0) {
+        sendNotification(key)
+        r.remaining = r.interval
+      } else {
+        r.remaining--
+      }
+      document.getElementById(`timer-${key}`).textContent = formatTime(r.remaining)
+    }, 1000)
+  }
+
+  function stopTimer(key) {
+    const r = reminders[key]
+    if (r.timer) clearInterval(r.timer)
+    r.timer     = null
+    r.remaining = r.interval
+    document.getElementById(`timer-${key}`).textContent = formatTime(r.interval)
+  }
+
+  function toggleReminder(key) {
+    const r = reminders[key]
+    r.active = !r.active
+    document.getElementById(`toggle-${key}`).classList.toggle('off', !r.active)
+    if (r.active) startTimer(key)
+    else stopTimer(key)
+    updateStatus()
+    saveSettings()
+  }
+
+  function toggleEdit(key) {
+    const expand  = document.getElementById(`expand-${key}`)
+    const editBtn = document.getElementById(`edit-${key}`)
+    const card    = document.getElementById(`card-${key}`)
+    const isOpen  = expand.classList.contains('open')
+
+    // Close all other expanded panels
+    Object.keys(reminders).forEach(k => {
+      if (k !== key) {
+        document.getElementById(`expand-${k}`).classList.remove('open')
+        document.getElementById(`edit-${k}`).classList.remove('active')
+        document.getElementById(`card-${k}`).classList.remove('expanded')
+      }
+    })
+
+    expand.classList.toggle('open', !isOpen)
+    editBtn.classList.toggle('active', !isOpen)
+    card.classList.toggle('expanded', !isOpen)
+  }
+
+  function onSliderChange(key, val) {
+    reminders[key].pendingInterval = parseInt(val) * 60
+    document.getElementById(`val-${key}`).textContent = `${val} ${locale.minFull}`
+  }
+
+  function saveAndRestart(key) {
+    const r       = reminders[key]
+    const minutes = r.pendingInterval / 60
+    r.interval  = r.pendingInterval
+    r.remaining = r.interval
+    document.getElementById(`desc-${key}`).innerHTML = locale.reminders[key].desc(minutes)
+    if (r.active) startTimer(key)
+    else document.getElementById(`timer-${key}`).textContent = formatTime(r.interval)
+
+    document.getElementById(`expand-${key}`).classList.remove('open')
+    document.getElementById(`edit-${key}`).classList.remove('active')
+    document.getElementById(`card-${key}`).classList.remove('expanded')
+    saveSettings()
+  }
+
+  function updateStatus() {
+    const active = Object.values(reminders).filter(r => r.active).length
+    const bar    = document.getElementById('status')
+    bar.innerHTML = active === 0
+      ? locale.status.allOff
+      : locale.status.running(active)
+  }
+
+  // ── Persistence ───────────────────────────────────────────────────────────
+  const STORAGE_KEY = 'healthbreak-settings'
+
+  function saveSettings() {
+    const settings = {}
+    Object.keys(reminders).forEach(key => {
+      settings[key] = { interval: reminders[key].interval, active: reminders[key].active }
+    })
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  }
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const settings = JSON.parse(raw)
+      Object.keys(settings).forEach(key => {
+        if (!reminders[key]) return
+        const s      = settings[key]
+        const r      = reminders[key]
+        const limits = NORMAL_LIMITS[key]
+        const minutes = Math.min(Math.max(Math.round(s.interval / 60), limits.min), limits.max)
+        r.interval        = minutes * 60
+        r.remaining       = r.interval
+        r.pendingInterval = r.interval
+        r.active          = s.active !== false
+        // Only update non-text UI (applyLocale handles all text)
+        document.getElementById(`slider-${key}`).value         = minutes
+        document.getElementById(`timer-${key}`).textContent    = formatTime(r.interval)
+        document.getElementById(`toggle-${key}`).classList.toggle('off', !r.active)
+      })
+    } catch (e) {
+      console.warn('Could not load settings:', e)
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Auto-launch ───────────────────────────────────────────────────────────
+  async function initAutoLaunch() {
+    const enabled = await ipcRenderer.invoke('get-auto-launch')
+    document.getElementById('toggle-autolaunch').classList.toggle('off', !enabled)
+  }
+
+  function toggleAutoLaunch() {
+    const el    = document.getElementById('toggle-autolaunch')
+    const isOff = el.classList.contains('off')
+    el.classList.toggle('off', !isOff)
+    ipcRenderer.send('set-auto-launch', isOff)
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Info modal ────────────────────────────────────────────────────────────
+  const CARD_ICONS = { water: '💧', move: '🏃', eyes: '👁️' }
+  let currentInfoKey = null
+
+  function openInfoModal(key) {
+    currentInfoKey = key
+    renderInfoModal()
+    document.getElementById('modal-backdrop').classList.add('open')
+  }
+
+  function renderInfoModal() {
+    if (!currentInfoKey) return
+    const key    = currentInfoKey
+    const locR   = locale.reminders[key]
+    const modal  = locale.infoModal
+
+    document.getElementById('modal-icon').textContent          = CARD_ICONS[key]
+    document.getElementById('modal-title').textContent         = locR.name
+    document.getElementById('modal-benefits-title').textContent = modal.benefitsTitle
+    document.getElementById('modal-risks-title').textContent   = modal.risksTitle
+
+    const benefitsList = document.getElementById('modal-benefits-list')
+    const risksList    = document.getElementById('modal-risks-list')
+
+    benefitsList.innerHTML = locR.info.benefits
+      .map(b => `<li>${b}</li>`).join('')
+    risksList.innerHTML = locR.info.risks
+      .map(r => `<li>${r}</li>`).join('')
+  }
+
+  function closeInfoModal() {
+    currentInfoKey = null
+    document.getElementById('modal-backdrop').classList.remove('open')
+  }
+
+  function onBackdropClick(event) {
+    if (event.target === document.getElementById('modal-backdrop')) {
+      closeInfoModal()
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && currentInfoKey) closeInfoModal()
+  })
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Bootstrap ─────────────────────────────────────────────────────────────
+  loadSettings()   // restore intervals + toggle states from localStorage
+  applyLocale()    // apply all locale strings (runs after loadSettings so intervals are correct)
+  initAutoLaunch() // async — updates auto-launch toggle
+  Object.keys(reminders).forEach(key => { if (reminders[key].active) startTimer(key) })
+  ipcRenderer.send('set-language', currentLang)  // sync tray menu with saved language
+  // ────────────────────────────────────────────────────────────────────────
+</script>
+</body>
+</html>
