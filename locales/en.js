@@ -101,4 +101,38 @@ module.exports = {
     benefitsTitle: 'Benefits for your health',
     risksTitle:    'Long-term risks if ignored',
   },
+
+  popup: {
+    confirm: '✓ Done!',
+    skip:    'Busy, skip this time',
+  },
+
+  stats: {
+    water: (n) => `${n} glass${n !== 1 ? 'es' : ''} confirmed today`,
+    move:  (n) => `${n} session${n !== 1 ? 's' : ''} confirmed today`,
+    eyes:  (n) => `${n} break${n !== 1 ? 's' : ''} confirmed today`,
+  },
+
+  onboarding: {
+    step1Title: 'Welcome to HealthBreak',
+    step1Desc:  'Smart health reminders to keep you feeling good throughout the workday.',
+    startBtn:   'Get Started →',
+    step2Title: 'Set your daily water goal',
+    step2Desc:  'Enter your measurements and we\'ll calculate the right amount of water for your body.',
+    applyBtn:   '✓ Set Goal & Start',
+    skipBtn:    'Skip — I\'ll set it up later',
+  },
+
+  waterGoal: {
+    heightLabel:    'Height (cm)',
+    weightLabel:    'Weight (kg)',
+    saveBtn:        'Save water goal',
+    recommendation: (sessions, ml) =>
+      `Goal: ${sessions} reminders/day · ~${Math.round(ml)}ml each`,
+    statsWithGoal:  (intakeMl, goalMl) =>
+      `${intakeMl}ml / ${goalMl}ml today · ${Math.max(0, goalMl - intakeMl)}ml left`,
+    popupBody:      (ml, remainingMl) => remainingMl > 0
+      ? `Drink ${Math.round(ml)}ml now! ~${remainingMl}ml left to reach your goal.`
+      : `Drink ${Math.round(ml)}ml now! 🎉 You've hit your daily goal!`,
+  },
 };

@@ -24,9 +24,39 @@ A desktop app that delivers periodic health reminders while you work at the comp
 ### Popup Notifications
 
 - Appears in the bottom-right corner without stealing focus
-- **Queue system** — multiple simultaneous reminders are shown one at a time
-- Badge shows how many reminders are waiting in the queue
-- Timer pauses while a popup is waiting for acknowledgement
+- **Two action buttons** — confirm you completed the action, or skip this time
+- Skipping twice in a row is blocked — the skip button is hidden until you confirm at least once
+- Colored accent bar matches the reminder type (blue · water, green · exercise, orange · eyes)
+- **Queue system** — multiple simultaneous reminders are shown one at a time with a waiting badge
+- Timer pauses while a popup is on screen
+
+### Daily Stats
+
+Each card tracks how many times you confirmed the action today:
+
+- 💧 Water intake shown as `consumed ml / goal ml` (when a water goal is set)
+- 🏃 Exercise and 👁️ eye rest show confirmed session counts
+- Stats reset automatically at midnight
+
+### Water Goal
+
+Set a personalized daily water intake target based on your body:
+
+1. Open the water card's **Edit** panel
+2. Enter your **height** (cm) and **weight** (kg)
+3. The app calculates your daily goal (`weight × 35 ml`) and recommends how many reminders per day and how much to drink each time
+4. Save — the reminder interval is automatically adjusted to match the recommendation
+
+Once set, the water popup shows exactly how much to drink now and how much is left for the day.
+
+### First-Run Onboarding
+
+On first launch, a 2-step setup flow is shown:
+
+1. **Welcome** — choose your language (EN / VI)
+2. **Water goal** — enter height and weight to get a personalized recommendation (skippable)
+
+The onboarding is skipped on all subsequent opens.
 
 ### System Tray
 
@@ -43,7 +73,7 @@ A desktop app that delivers periodic health reminders while you work at the comp
 
 Switch between **English** (default) and **Tiếng Việt** using the **EN / VI** buttons in the top-right corner of the app. The preference is saved and restored on next launch.
 
-All strings (UI labels, popup messages, tray menu) are defined in `locales/en.js` and `locales/vi.js` — easy to update or extend with additional languages.
+All strings (UI labels, popup messages, tray menu) are defined in `locales/en.js` and `locales/vi.js`.
 
 ### Testing Mode _(hidden)_
 
@@ -81,7 +111,7 @@ Output goes to the `dist/` folder.
 npm run build:win
 ```
 
-Output: `dist/HealthBreak Setup 1.0.0.exe`
+Output: `dist/HealthBreak Setup 1.0.1.exe`
 
 > **Note:** The build script automatically handles the `winCodeSign` symlink issue on Windows.
 > The first build will take extra time to download the required tools.
@@ -100,7 +130,7 @@ Output: `dist/win-unpacked/HealthBreak.exe` _(runs directly, no installation nee
 npm run build:mac
 ```
 
-Output: `dist/HealthBreak-1.0.0.dmg`
+Output: `dist/HealthBreak-1.0.1.dmg`
 
 > **Note:** `build:mac` must be run on a macOS machine.
 
@@ -123,7 +153,7 @@ Output: `dist/HealthBreak-1.0.0.dmg`
 ```
 HealthBreak/
 ├── main.js            # Main process — tray, popup queue, IPC, auto-launch
-├── index.html         # Renderer — settings UI, timers, localStorage
+├── index.html         # Renderer — settings UI, timers, stats, water goal, onboarding
 ├── popup.html         # Renderer — bottom-right notification popup
 ├── locales/
 │   ├── en.js          # English strings
@@ -132,9 +162,22 @@ HealthBreak/
 ├── tray-icon.png      # System tray icon
 ├── scripts/
 │   └── setup-wincodecsign.js  # Windows build workaround (symlink fix)
+├── CHANGELOG.md
 ├── package.json
 └── dist/              # Build output (auto-generated, not committed)
 ```
+
+---
+
+## localStorage Keys
+
+| Key | Description |
+|---|---|
+| `healthbreak-settings` | Reminder intervals, on/off toggles |
+| `healthbreak-lang` | Selected language (`en` or `vi`) |
+| `healthbreak-daily-stats` | Today's confirmed action counts (resets daily) |
+| `healthbreak-water-goal` | Saved water goal (height, weight, calculated targets) |
+| `healthbreak-onboarded` | Set after first-run onboarding is completed |
 
 ---
 
@@ -142,17 +185,11 @@ HealthBreak/
 
 1. Copy `locales/en.js` to `locales/xx.js` (where `xx` is the language code)
 2. Translate all string values (keep the object structure intact)
-3. Add a button in `index.html` inside `.lang-switcher`:
+3. Add a button in `index.html` inside `.lang-switcher` and `.onboard-lang`:
    ```html
-   <button id="btn-lang-xx" class="lang-btn" onclick="setLanguage('xx')">XX</button>
+   <button class="lang-btn" onclick="setLanguage('xx')">XX</button>
    ```
-4. Add `document.getElementById('btn-lang-xx').classList.toggle('active', currentLang === 'xx')` inside `applyLocale()` in `index.html`
-
----
-
-## Settings Storage
-
-All user preferences (reminder intervals, on/off toggles, language) are stored in the renderer's **`localStorage`** — no external config files, no filesystem writes required.
+4. Add `classList.toggle('active', currentLang === 'xx')` for the new button inside `applyLocale()` and `applyOnboardingLocale()` in `index.html`
 
 ---
 
@@ -172,8 +209,25 @@ All user preferences (reminder intervals, on/off toggles, language) are stored i
 
 - Bật/tắt từng nhắc nhở độc lập, tùy chỉnh chu kỳ bằng slider
 - Đồng hồ đếm ngược cho từng nhắc nhở, âm thanh thông báo riêng biệt
-- Popup xếp hàng, chạy nền qua system tray, tự khởi động cùng Windows
-- **Hỗ trợ đa ngôn ngữ** — nhấn **EN / VI** để chuyển ngôn ngữ; chuỗi được định nghĩa trong `locales/vi.js`
+
+#### Popup thông báo
+- **2 nút tương tác**: Xác nhận đã thực hiện / Bỏ qua lần này
+- Không thể bỏ qua 2 lần liên tiếp — nút bỏ qua ẩn sau khi bỏ qua 1 lần
+- Thanh màu accent phân biệt loại nhắc nhở
+
+#### Thống kê hàng ngày
+- Mỗi lần xác nhận được ghi lại trên card, reset lúc nửa đêm
+- Uống nước hiển thị tiến độ ml đã uống / mục tiêu ngày
+
+#### Mục tiêu uống nước
+- Nhập chiều cao + cân nặng → app tính lượng nước cần thiết (`cân nặng × 35ml`)
+- Gợi ý số lần uống/ngày và ml mỗi lần
+- Lưu mục tiêu → interval nhắc nhở tự động điều chỉnh
+- Popup uống nước hiển thị số ml cần uống ngay và còn lại trong ngày
+
+#### Onboarding lần đầu
+- Flow 2 bước khi mở app lần đầu: chọn ngôn ngữ → thiết lập mục tiêu nước
+- Bỏ qua được, có thể thiết lập sau trong phần Edit của card uống nước
 
 ### Cài đặt & Chạy
 

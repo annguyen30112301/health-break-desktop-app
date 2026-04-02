@@ -101,4 +101,38 @@ module.exports = {
     benefitsTitle: 'Lợi ích với sức khỏe',
     risksTitle:    'Tác hại lâu dài nếu bỏ qua',
   },
+
+  popup: {
+    confirm: '✓ Xác nhận đã thực hiện',
+    skip:    'Tôi đang bận, bỏ qua lần này',
+  },
+
+  stats: {
+    water: (n) => `Đã uống ${n} lần hôm nay`,
+    move:  (n) => `Đã vận động ${n} lần hôm nay`,
+    eyes:  (n) => `Đã nghỉ mắt ${n} lần hôm nay`,
+  },
+
+  onboarding: {
+    step1Title: 'Chào mừng đến với HealthBreak',
+    step1Desc:  'Nhắc nhở sức khỏe thông minh giúp bạn luôn khỏe mạnh trong ngày làm việc.',
+    startBtn:   'Bắt đầu →',
+    step2Title: 'Thiết lập mục tiêu uống nước',
+    step2Desc:  'Nhập thông tin cơ thể để tính lượng nước phù hợp nhất cho bạn mỗi ngày.',
+    applyBtn:   '✓ Áp dụng & Bắt đầu',
+    skipBtn:    'Bỏ qua — tôi sẽ thiết lập sau',
+  },
+
+  waterGoal: {
+    heightLabel:    'Chiều cao (cm)',
+    weightLabel:    'Cân nặng (kg)',
+    saveBtn:        'Lưu mục tiêu uống nước',
+    recommendation: (sessions, ml) =>
+      `Gợi ý: ${sessions} lần/ngày · ~${Math.round(ml)}ml mỗi lần`,
+    statsWithGoal:  (intakeMl, goalMl) =>
+      `${intakeMl}ml / ${goalMl}ml hôm nay · còn ${Math.max(0, goalMl - intakeMl)}ml`,
+    popupBody:      (ml, remainingMl) => remainingMl > 0
+      ? `Uống ${Math.round(ml)}ml ngay! Còn ~${remainingMl}ml để đạt mục tiêu.`
+      : `Uống ${Math.round(ml)}ml ngay! 🎉 Bạn đã đạt mục tiêu hôm nay!`,
+  },
 };
