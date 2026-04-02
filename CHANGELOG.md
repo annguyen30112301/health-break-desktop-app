@@ -6,8 +6,38 @@ All notable changes to HealthBreak will be documented in this file.
 
 ## [1.0.1] - 2026-04-02
 
+### New Features
+
+#### Popup Interactions
+- Replaced the close (✕) button with two action buttons: **"Confirm done"** and **"Skip this time"**
+- Skipping is blocked after two consecutive skips — the skip button is hidden until the user confirms at least once
+- Colored accent bar at the top of each popup matches the reminder type (blue · water, green · exercise, orange · eye rest)
+
+#### Daily Stats Tracking
+- Each "Confirm done" action increments a per-reminder counter shown on its card
+- Stats reset automatically at midnight each day
+- Stats persist across app restarts via `localStorage`
+
+#### Water Goal
+- New section inside the water card's **Edit** panel to set a personalized daily water target
+- Enter height (cm) and weight (kg) → app calculates daily goal (`weight × 35 ml`, rounded to nearest 50 ml) and recommended sessions per day
+- Live recommendation preview updates as you type
+- Saving the goal auto-applies a suggested reminder interval (sessions spread over 16 active hours, clamped to the valid range)
+- Water card stats area shows intake progress: `consumed ml / goal ml today`
+- Water popup body is personalised: shows exact ml to drink and how much is left to reach the daily goal
+
+#### First-Run Onboarding
+- 2-step onboarding overlay shown on first launch (skipped on all subsequent opens)
+- **Step 1 — Welcome**: app intro, EN/VI language switcher
+- **Step 2 — Water goal**: height/weight inputs with live recommendation; user can apply or skip
+- Applying the goal from onboarding sets the water goal and auto-configures the reminder interval
+- Language can be switched during onboarding; UI updates immediately
+
 ### Changed
-- Updated version from `1.0.0.1` to `1.0.1` to follow semantic versioning
+- Version bumped from `1.0.0.1` to `1.0.1` (semantic versioning)
+
+### Fixed
+- Language switch buttons in onboarding were blocked by overlapping positioned elements (z-index fix)
 
 ---
 
@@ -66,7 +96,7 @@ All notable changes to HealthBreak will be documented in this file.
 
 - Card-based layout with three reminder cards
 - Status bar showing active reminder count or "All reminders are off"
-- Fixed 460×300px window; non-resizable
+- Fixed 460×560px window; non-resizable
 
 ### Testing Mode
 
