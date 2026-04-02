@@ -26,6 +26,7 @@ function createWindow() {
   })
 
   mainWindow.loadFile('index.html')
+  mainWindow.webContents.openDevTools({ mode: 'detach' })
   // Nếu khởi động tự động → ẩn cửa sổ, chỉ chạy nền
   if (process.argv.includes('--hidden')) {
     mainWindow.once('ready-to-show', () => mainWindow.hide())

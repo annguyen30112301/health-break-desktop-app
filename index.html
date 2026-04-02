@@ -328,6 +328,91 @@
       font-weight: 600;
     }
     .card-stats.visible { display: block; }
+
+    /* ── Water goal expand ───────────────────────────────────────── */
+    #expand-water.open { max-height: 240px; }
+    .goal-divider { border: none; border-top: 1px solid #f0f0f0; margin: 10px 0 10px; }
+    .goal-input-row { display: flex; gap: 10px; margin-bottom: 8px; }
+    .goal-input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .goal-input-group label { font-size: 10px; color: #aaa; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .goal-input-group input[type=number] {
+      width: 100%; padding: 5px 8px;
+      border: 1px solid #e0e0e0; border-radius: 6px;
+      font-size: 13px; font-weight: 600; color: #333; outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+    .goal-input-group input[type=number]::-webkit-inner-spin-button,
+    .goal-input-group input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .goal-input-group input[type=number]:focus { border-color: #1e88e5; }
+    .goal-recommendation { font-size: 11px; color: #1e88e5; font-weight: 600; min-height: 16px; margin-bottom: 8px; }
+
+    /* ── Onboarding overlay ──────────────────────────────────────── */
+    #onboarding-overlay {
+      position: fixed; inset: 0;
+      background: white;
+      z-index: 200;
+      display: none;
+      overflow: hidden;
+    }
+    .onboard-step {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 48px 32px 32px;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      will-change: opacity, transform;
+    }
+    .onboard-step.ob-active       { opacity: 1;  transform: translateX(0);    pointer-events: auto; }
+    .onboard-step.ob-hidden-left  { opacity: 0;  transform: translateX(-28px); pointer-events: none; }
+    .onboard-step.ob-hidden-right { opacity: 0;  transform: translateX(28px);  pointer-events: none; }
+    .onboard-dots {
+      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px;
+    }
+    .onboard-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #e0e0e0; transition: background 0.2s;
+    }
+    .onboard-dot.active { background: #4CAF50; width: 20px; border-radius: 4px; }
+    .onboard-lang {
+      position: absolute; top: 14px; right: 16px;
+      display: flex; gap: 4px;
+      z-index: 10;
+    }
+    .onboard-logo { font-size: 56px; margin-bottom: 18px; }
+    .onboard-title {
+      font-size: 19px; font-weight: 700; color: #1a1a1a;
+      margin-bottom: 10px; text-align: center;
+    }
+    .onboard-desc {
+      font-size: 13px; color: #888; text-align: center;
+      line-height: 1.6; max-width: 310px; margin-bottom: 32px;
+    }
+    .onboard-icon { font-size: 40px; margin-bottom: 14px; }
+    .onboard-subdesc {
+      font-size: 12px; color: #888; text-align: center;
+      line-height: 1.6; max-width: 310px; margin-bottom: 20px;
+    }
+    .onboard-recommendation {
+      font-size: 12px; color: #1e88e5; font-weight: 600;
+      min-height: 20px; margin: 6px 0 18px; text-align: center;
+    }
+    .btn-onboard-primary {
+      width: 100%; max-width: 320px; padding: 12px;
+      background: #4CAF50; color: white;
+      border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background 0.15s; margin-bottom: 10px;
+    }
+    .btn-onboard-primary:hover  { background: #43A047; }
+    .btn-onboard-primary:active { background: #388E3C; }
+    .btn-onboard-skip {
+      background: none; border: none; color: #bbb;
+      font-size: 12px; cursor: pointer; padding: 4px 8px;
+      transition: color 0.15s;
+    }
+    .btn-onboard-skip:hover { color: #888; }
   </style>
 </head>
 <body>
@@ -373,6 +458,25 @@
         <span class="slider-value" id="val-water"></span>
       </div>
       <button class="btn-save" id="save-water" onclick="saveAndRestart('water')"></button>
+      <!-- ── Water goal section ── -->
+      <hr class="goal-divider">
+      <div class="goal-input-row">
+        <div class="goal-input-group">
+          <label id="goal-height-label"></label>
+          <input type="number" id="input-height" min="100" max="250" placeholder="170"
+            oninput="onGoalInputChange()">
+        </div>
+        <div class="goal-input-group">
+          <label id="goal-weight-label"></label>
+          <input type="number" id="input-weight" min="30" max="200" placeholder="65"
+            oninput="onGoalInputChange()">
+        </div>
+      </div>
+      <div class="goal-recommendation" id="goal-recommendation"></div>
+      <button class="btn-save" id="save-goal" onclick="saveWaterGoalAndApply()"
+        style="background:#1e88e5;"
+        onmouseover="this.style.background='#1976D2'"
+        onmouseout="this.style.background='#1e88e5'"></button>
     </div>
   </div>
 </div>
@@ -462,6 +566,57 @@
   </div>
 </div>
 
+<!-- ── Onboarding overlay ─────────────────────────────────────────────────── -->
+<div id="onboarding-overlay">
+
+  <!-- Progress dots -->
+  <div class="onboard-dots">
+    <div class="onboard-dot active" id="onboard-dot-1"></div>
+    <div class="onboard-dot"        id="onboard-dot-2"></div>
+  </div>
+
+  <!-- Language switcher -->
+  <div class="onboard-lang">
+    <button id="ob-btn-lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
+    <button id="ob-btn-lang-vi" class="lang-btn" onclick="setLanguage('vi')">VI</button>
+  </div>
+
+  <!-- Step 1: Welcome -->
+  <div class="onboard-step ob-active" id="onboard-step-1">
+    <div class="onboard-logo">💚</div>
+    <div class="onboard-title"  id="ob-step1-title"></div>
+    <div class="onboard-desc"   id="ob-step1-desc"></div>
+    <button class="btn-onboard-primary" id="ob-start-btn" onclick="goToOnboardStep(2)"></button>
+  </div>
+
+  <!-- Step 2: Water goal -->
+  <div class="onboard-step ob-hidden-right" id="onboard-step-2">
+    <div class="onboard-icon">💧</div>
+    <div class="onboard-title"   id="ob-step2-title"></div>
+    <div class="onboard-subdesc" id="ob-step2-desc"></div>
+    <div class="goal-input-row" style="width:100%; max-width:320px;">
+      <div class="goal-input-group">
+        <label id="ob-height-label"></label>
+        <input type="number" id="onboard-height" min="100" max="250" placeholder="170"
+          oninput="onOnboardInputChange()">
+      </div>
+      <div class="goal-input-group">
+        <label id="ob-weight-label"></label>
+        <input type="number" id="onboard-weight" min="30" max="200" placeholder="65"
+          oninput="onOnboardInputChange()">
+      </div>
+    </div>
+    <div class="onboard-recommendation" id="onboard-recommendation"></div>
+    <button class="btn-onboard-primary" id="ob-apply-btn"
+      style="background:#1e88e5;"
+      onmouseover="this.style.background='#1976D2'"
+      onmouseout="this.style.background='#1e88e5'"
+      onclick="finishOnboarding(false)"></button>
+    <button class="btn-onboard-skip" id="ob-skip-btn" onclick="finishOnboarding(true)"></button>
+  </div>
+
+</div>
+
 <script>
   const { ipcRenderer } = require('electron')
 
@@ -511,6 +666,11 @@
       document.getElementById(`max-label-${key}`).textContent  = `${NORMAL_LIMITS[key].max}${locale.minShort}`
     })
 
+    // Water goal section labels
+    document.getElementById('goal-height-label').textContent = locale.waterGoal.heightLabel
+    document.getElementById('goal-weight-label').textContent = locale.waterGoal.weightLabel
+    document.getElementById('save-goal').textContent         = locale.waterGoal.saveBtn
+
     // Auto-launch card
     document.getElementById('autolaunch-name').textContent = locale.autoLaunch.name
     document.getElementById('autolaunch-desc').textContent = locale.autoLaunch.desc
@@ -527,6 +687,10 @@
 
     // Re-render stats labels (text changes between EN/VI)
     if (typeof initStatsDisplay === 'function') initStatsDisplay()
+
+    // Update onboarding texts if overlay is visible
+    const _overlay = document.getElementById('onboarding-overlay')
+    if (_overlay && _overlay.style.display !== 'none') applyOnboardingLocale()
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -672,10 +836,18 @@
 
   function sendNotification(key) {
     const r = reminders[key]
+    let body = r.body
+
+    if (key === 'water' && waterGoal) {
+      const intakeMl    = (dailyStats.water || 0) * waterGoal.mlPerSession
+      const remainingMl = Math.max(0, waterGoal.dailyGoal - intakeMl)
+      body = locale.waterGoal.popupBody(waterGoal.mlPerSession, remainingMl)
+    }
+
     ipcRenderer.send('show-popup', {
       key,
       title:      r.label,
-      body:       r.body,
+      body,
       btnConfirm: locale.popup.confirm,
       btnSkip:    locale.popup.skip,
     })
@@ -738,6 +910,20 @@
     expand.classList.toggle('open', !isOpen)
     editBtn.classList.toggle('active', !isOpen)
     card.classList.toggle('expanded', !isOpen)
+
+    // Water card: pre-populate goal inputs when opening
+    if (key === 'water' && !isOpen) {
+      if (waterGoal) {
+        document.getElementById('input-height').value = waterGoal.height
+        document.getElementById('input-weight').value = waterGoal.weight
+        document.getElementById('goal-recommendation').textContent =
+          locale.waterGoal.recommendation(waterGoal.sessions, waterGoal.mlPerSession)
+      } else {
+        document.getElementById('input-height').value = ''
+        document.getElementById('input-weight').value = ''
+        document.getElementById('goal-recommendation').textContent = ''
+      }
+    }
   }
 
   function onSliderChange(key, val) {
@@ -865,6 +1051,74 @@
   })
   // ────────────────────────────────────────────────────────────────────────
 
+  // ── Water goal ────────────────────────────────────────────────────────────
+  const WATER_GOAL_KEY = 'healthbreak-water-goal'
+  let waterGoal = null  // null = not set; { height, weight, dailyGoal, sessions, mlPerSession }
+
+  function loadWaterGoal() {
+    try {
+      const raw = localStorage.getItem(WATER_GOAL_KEY)
+      if (raw) waterGoal = JSON.parse(raw)
+    } catch { waterGoal = null }
+  }
+
+  function persistWaterGoal() {
+    if (waterGoal) localStorage.setItem(WATER_GOAL_KEY, JSON.stringify(waterGoal))
+    else localStorage.removeItem(WATER_GOAL_KEY)
+  }
+
+  function calcWaterGoal(heightCm, weightKg) {
+    const dailyGoal    = Math.round(weightKg * 35 / 50) * 50   // round to nearest 50ml
+    const sessions     = Math.max(1, Math.round(dailyGoal / 250))
+    const mlPerSession = Math.round(dailyGoal / sessions)
+    return { height: heightCm, weight: weightKg, dailyGoal, sessions, mlPerSession }
+  }
+
+  function onGoalInputChange() {
+    const w = parseFloat(document.getElementById('input-weight').value)
+    const h = parseFloat(document.getElementById('input-height').value) || 170
+    const el = document.getElementById('goal-recommendation')
+    if (w >= 30 && w <= 200) {
+      const g = calcWaterGoal(h, w)
+      el.textContent = locale.waterGoal.recommendation(g.sessions, g.mlPerSession)
+    } else {
+      el.textContent = ''
+    }
+  }
+
+  function saveWaterGoalAndApply() {
+    const w = parseFloat(document.getElementById('input-weight').value)
+    const h = parseFloat(document.getElementById('input-height').value) || 170
+    if (!w || w < 30 || w > 200) return
+
+    waterGoal = calcWaterGoal(h, w)
+    persistWaterGoal()
+
+    // Suggest interval: spread sessions across 16 active hours, clamped to valid range
+    const limits      = isTestingMode ? TESTING_LIMITS.water : NORMAL_LIMITS.water
+    const suggestedMin = Math.round(16 * 60 / waterGoal.sessions)
+    const clampedMin  = Math.min(Math.max(suggestedMin, limits.min), limits.max)
+    const r           = reminders.water
+    r.pendingInterval = clampedMin * 60
+    r.interval        = r.pendingInterval
+    r.remaining       = r.interval
+    document.getElementById('slider-water').value           = clampedMin
+    document.getElementById('val-water').textContent        = `${clampedMin} ${locale.minFull}`
+    document.getElementById('desc-water').innerHTML         = locale.reminders.water.desc(clampedMin)
+    document.getElementById('timer-water').textContent      = formatTime(r.interval)
+    if (r.active) startTimer('water')
+
+    // Close expand panel
+    const expand = document.getElementById('expand-water')
+    expand.classList.remove('open')
+    document.getElementById('edit-water').classList.remove('active')
+    document.getElementById('card-water').classList.remove('expanded')
+
+    saveSettings()
+    renderStatsDisplay('water')
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   // ── Daily stats ───────────────────────────────────────────────────────────
   const STATS_KEY = 'healthbreak-daily-stats'
 
@@ -895,9 +1149,16 @@
   }
 
   function renderStatsDisplay(key) {
-    const el  = document.getElementById(`stats-${key}`)
-    const n   = dailyStats[key] || 0
-    if (n > 0) {
+    const el = document.getElementById(`stats-${key}`)
+    const n  = dailyStats[key] || 0
+
+    if (key === 'water' && waterGoal) {
+      const intakeMl = n * waterGoal.mlPerSession
+      el.textContent = n > 0
+        ? locale.waterGoal.statsWithGoal(intakeMl, waterGoal.dailyGoal)
+        : locale.waterGoal.recommendation(waterGoal.sessions, waterGoal.mlPerSession)
+      el.classList.add('visible')
+    } else if (n > 0) {
       el.textContent = locale.stats[key](n)
       el.classList.add('visible')
     } else {
@@ -910,10 +1171,106 @@
   }
   // ────────────────────────────────────────────────────────────────────────
 
+  // ── Onboarding ────────────────────────────────────────────────────────────
+  const ONBOARDED_KEY    = 'healthbreak-onboarded'
+  let   onboardStep      = 1
+
+  function initOnboarding() {
+    if (localStorage.getItem(ONBOARDED_KEY)) return
+    document.getElementById('onboarding-overlay').style.display = 'block'
+    applyOnboardingLocale()  // texts must be set AFTER overlay is shown
+  }
+
+  function goToOnboardStep(n) {
+    const from = document.getElementById(`onboard-step-${onboardStep}`)
+    const to   = document.getElementById(`onboard-step-${n}`)
+    const fwd  = n > onboardStep
+
+    from.classList.remove('ob-active')
+    from.classList.add(fwd ? 'ob-hidden-left' : 'ob-hidden-right')
+
+    to.classList.remove(fwd ? 'ob-hidden-right' : 'ob-hidden-left')
+    to.classList.add('ob-active')
+
+    onboardStep = n
+
+    document.getElementById('onboard-dot-1').classList.toggle('active', n === 1)
+    document.getElementById('onboard-dot-2').classList.toggle('active', n === 2)
+  }
+
+  function onOnboardInputChange() {
+    const w  = parseFloat(document.getElementById('onboard-weight').value)
+    const h  = parseFloat(document.getElementById('onboard-height').value) || 170
+    const el = document.getElementById('onboard-recommendation')
+    if (w >= 30 && w <= 200) {
+      const g = calcWaterGoal(h, w)
+      el.textContent = locale.waterGoal.recommendation(g.sessions, g.mlPerSession)
+    } else {
+      el.textContent = ''
+    }
+  }
+
+  function finishOnboarding(skip) {
+    if (!skip) {
+      const w = parseFloat(document.getElementById('onboard-weight').value)
+      const h = parseFloat(document.getElementById('onboard-height').value) || 170
+      if (w >= 30 && w <= 200) {
+        waterGoal = calcWaterGoal(h, w)
+        persistWaterGoal()
+
+        // Auto-apply suggested interval (clamped to valid range)
+        const limits      = NORMAL_LIMITS.water
+        const suggestedMin = Math.round(16 * 60 / waterGoal.sessions)
+        const clampedMin  = Math.min(Math.max(suggestedMin, limits.min), limits.max)
+        const r           = reminders.water
+        r.pendingInterval = clampedMin * 60
+        r.interval        = r.pendingInterval
+        r.remaining       = r.interval
+        document.getElementById('slider-water').value          = clampedMin
+        document.getElementById('val-water').textContent       = `${clampedMin} ${locale.minFull}`
+        document.getElementById('desc-water').innerHTML        = locale.reminders.water.desc(clampedMin)
+        document.getElementById('timer-water').textContent     = formatTime(r.interval)
+        if (r.active) startTimer('water')
+        saveSettings()
+        renderStatsDisplay('water')
+      }
+    }
+
+    localStorage.setItem(ONBOARDED_KEY, '1')
+
+    const overlay = document.getElementById('onboarding-overlay')
+    overlay.style.transition = 'opacity 0.3s ease'
+    overlay.style.opacity    = '0'
+    setTimeout(() => { overlay.style.display = 'none' }, 300)
+  }
+
+  function applyOnboardingLocale() {
+    if (!locale.onboarding || !locale.waterGoal) return
+    const ob = locale.onboarding
+    const wg = locale.waterGoal
+    document.getElementById('ob-step1-title').textContent = ob.step1Title
+    document.getElementById('ob-step1-desc').textContent  = ob.step1Desc
+    document.getElementById('ob-start-btn').textContent   = ob.startBtn
+    document.getElementById('ob-step2-title').textContent = ob.step2Title
+    document.getElementById('ob-step2-desc').textContent  = ob.step2Desc
+    document.getElementById('ob-apply-btn').textContent   = ob.applyBtn
+    document.getElementById('ob-skip-btn').textContent    = ob.skipBtn
+    document.getElementById('ob-height-label').textContent = wg.heightLabel
+    document.getElementById('ob-weight-label').textContent = wg.weightLabel
+    // Refresh live recommendation if inputs already filled
+    onOnboardInputChange()
+    // Sync lang buttons
+    document.getElementById('ob-btn-lang-en').classList.toggle('active', currentLang === 'en')
+    document.getElementById('ob-btn-lang-vi').classList.toggle('active', currentLang === 'vi')
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   // ── Bootstrap ─────────────────────────────────────────────────────────────
-  loadSettings()    // restore intervals + toggle states from localStorage
-  applyLocale()     // apply all locale strings (runs after loadSettings so intervals are correct)
-  initAutoLaunch()  // async — updates auto-launch toggle
+  loadSettings()     // restore intervals + toggle states from localStorage
+  loadWaterGoal()    // restore saved water goal (must run before applyLocale/initStats)
+  applyLocale()      // apply all locale strings (runs after loadSettings so intervals are correct)
+  initOnboarding()   // show onboarding overlay if first run
+  initAutoLaunch()   // async — updates auto-launch toggle
   initStatsDisplay() // render today's confirmed counts on cards
   Object.keys(reminders).forEach(key => { if (reminders[key].active) startTimer(key) })
   ipcRenderer.send('set-language', currentLang)  // sync tray menu with saved language
