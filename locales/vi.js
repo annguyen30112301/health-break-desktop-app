@@ -101,4 +101,15 @@ module.exports = {
     benefitsTitle: 'Lợi ích với sức khỏe',
     risksTitle:    'Tác hại lâu dài nếu bỏ qua',
   },
+
+  popup: {
+    confirm: '✓ Xác nhận đã thực hiện',
+    skip:    'Tôi đang bận, bỏ qua lần này',
+  },
+
+  stats: {
+    water: (n) => `Đã uống ${n} lần hôm nay`,
+    move:  (n) => `Đã vận động ${n} lần hôm nay`,
+    eyes:  (n) => `Đã nghỉ mắt ${n} lần hôm nay`,
+  },
 };

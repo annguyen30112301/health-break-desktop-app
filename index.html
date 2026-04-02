@@ -317,6 +317,17 @@
     .modal-section.risks    ul li { background: #fff8f3; }
     .modal-section.benefits ul li::before { content: '✓'; color: #4CAF50; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
     .modal-section.risks    ul li::before { content: '!'; color: #e65100; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Daily stats ─────────────────────────────────────────────── */
+    .card-stats {
+      display: none;
+      margin-top: 6px;
+      padding-left: 58px;
+      font-size: 11.5px;
+      color: #4CAF50;
+      font-weight: 600;
+    }
+    .card-stats.visible { display: block; }
   </style>
 </head>
 <body>
@@ -351,6 +362,7 @@
     <div class="toggle" id="toggle-water" onclick="toggleReminder('water')"></div>
   </div>
   <div class="card-desc" id="desc-water"></div>
+  <div class="card-stats" id="stats-water"></div>
   <div class="card-expand" id="expand-water">
     <div class="expand-inner">
       <div class="expand-row">
@@ -376,6 +388,7 @@
     <div class="toggle" id="toggle-move" onclick="toggleReminder('move')"></div>
   </div>
   <div class="card-desc" id="desc-move"></div>
+  <div class="card-stats" id="stats-move"></div>
   <div class="card-expand" id="expand-move">
     <div class="expand-inner">
       <div class="expand-row">
@@ -401,6 +414,7 @@
     <div class="toggle" id="toggle-eyes" onclick="toggleReminder('eyes')"></div>
   </div>
   <div class="card-desc" id="desc-eyes"></div>
+  <div class="card-stats" id="stats-eyes"></div>
   <div class="card-expand" id="expand-eyes">
     <div class="expand-inner">
       <div class="expand-row">
@@ -510,6 +524,9 @@
 
     // Re-render modal content if it's currently open (language switch)
     if (currentInfoKey) renderInfoModal()
+
+    // Re-render stats labels (text changes between EN/VI)
+    if (typeof initStatsDisplay === 'function') initStatsDisplay()
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -647,11 +664,21 @@
     document.getElementById(`timer-${key}`).textContent = formatTime(r.interval)
     if (r.active) startTimer(key)
   })
+
+  ipcRenderer.on('popup-confirmed', (event, key) => {
+    incrementStat(key)
+  })
   // ────────────────────────────────────────────────────────────────────────
 
   function sendNotification(key) {
     const r = reminders[key]
-    ipcRenderer.send('show-popup', { key, title: r.label, body: r.body })
+    ipcRenderer.send('show-popup', {
+      key,
+      title:      r.label,
+      body:       r.body,
+      btnConfirm: locale.popup.confirm,
+      btnSkip:    locale.popup.skip,
+    })
     playSound(key)
   }
 
@@ -838,10 +865,56 @@
   })
   // ────────────────────────────────────────────────────────────────────────
 
+  // ── Daily stats ───────────────────────────────────────────────────────────
+  const STATS_KEY = 'healthbreak-daily-stats'
+
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10)
+  }
+
+  function loadStats() {
+    try {
+      const raw = localStorage.getItem(STATS_KEY)
+      if (!raw) return { date: todayStr(), water: 0, move: 0, eyes: 0 }
+      const s = JSON.parse(raw)
+      if (s.date !== todayStr()) return { date: todayStr(), water: 0, move: 0, eyes: 0 }
+      return s
+    } catch { return { date: todayStr(), water: 0, move: 0, eyes: 0 } }
+  }
+
+  function saveStats(s) {
+    localStorage.setItem(STATS_KEY, JSON.stringify(s))
+  }
+
+  let dailyStats = loadStats()
+
+  function incrementStat(key) {
+    dailyStats[key] = (dailyStats[key] || 0) + 1
+    saveStats(dailyStats)
+    renderStatsDisplay(key)
+  }
+
+  function renderStatsDisplay(key) {
+    const el  = document.getElementById(`stats-${key}`)
+    const n   = dailyStats[key] || 0
+    if (n > 0) {
+      el.textContent = locale.stats[key](n)
+      el.classList.add('visible')
+    } else {
+      el.classList.remove('visible')
+    }
+  }
+
+  function initStatsDisplay() {
+    ;['water', 'move', 'eyes'].forEach(key => renderStatsDisplay(key))
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   // ── Bootstrap ─────────────────────────────────────────────────────────────
-  loadSettings()   // restore intervals + toggle states from localStorage
-  applyLocale()    // apply all locale strings (runs after loadSettings so intervals are correct)
-  initAutoLaunch() // async — updates auto-launch toggle
+  loadSettings()    // restore intervals + toggle states from localStorage
+  applyLocale()     // apply all locale strings (runs after loadSettings so intervals are correct)
+  initAutoLaunch()  // async — updates auto-launch toggle
+  initStatsDisplay() // render today's confirmed counts on cards
   Object.keys(reminders).forEach(key => { if (reminders[key].active) startTimer(key) })
   ipcRenderer.send('set-language', currentLang)  // sync tray menu with saved language
   // ────────────────────────────────────────────────────────────────────────

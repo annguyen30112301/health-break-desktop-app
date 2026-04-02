@@ -101,4 +101,15 @@ module.exports = {
     benefitsTitle: 'Benefits for your health',
     risksTitle:    'Long-term risks if ignored',
   },
+
+  popup: {
+    confirm: '✓ Done!',
+    skip:    'Busy, skip this time',
+  },
+
+  stats: {
+    water: (n) => `${n} glass${n !== 1 ? 'es' : ''} confirmed today`,
+    move:  (n) => `${n} session${n !== 1 ? 's' : ''} confirmed today`,
+    eyes:  (n) => `${n} break${n !== 1 ? 's' : ''} confirmed today`,
+  },
 };

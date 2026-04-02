@@ -1,6 +1,6 @@
 {
   "name": "healthbreak",
-  "version": "1.0.0.1",
+  "version": "1.0.1",
   "description": "Periodic health reminders — drink water, light exercise, eye rest",
   "main": "main.js",
   "scripts": {

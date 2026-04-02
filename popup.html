@@ -7,72 +7,125 @@
     body {
       font-family: -apple-system, 'Segoe UI', sans-serif;
       background: white;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
       user-select: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
     .popup {
-      padding: 14px 16px;
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      flex-direction: column;
       animation: slideIn 0.25s ease;
     }
     @keyframes slideIn {
-      from { transform: translateY(16px); opacity: 0; }
+      from { transform: translateY(12px); opacity: 0; }
       to   { transform: translateY(0);    opacity: 1; }
     }
-    .icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
-    .content { flex: 1; }
-    .title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 3px; }
-    .body  { font-size: 12px; color: #666; line-height: 1.4; }
+
+    /* ── Accent bar ─────────────────────────────────────────────── */
+    .accent-bar {
+      height: 4px;
+      background: #2196F3;
+      flex-shrink: 0;
+    }
+
+    /* ── Main content ───────────────────────────────────────────── */
+    .popup-inner { padding: 12px 14px 12px; }
+    .popup-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .icon { font-size: 26px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+    .content { flex: 1; min-width: 0; }
+    .title { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
+    .body  { font-size: 11.5px; color: #555; line-height: 1.45; }
     .queue-badge {
       display: none;
-      font-size: 11px;
+      font-size: 10.5px;
       background: #f5f5f5;
       border: 1px solid #eee;
       border-radius: 20px;
-      padding: 2px 8px;
-      color: #888;
+      padding: 2px 7px;
+      color: #999;
       margin-top: 5px;
     }
     .queue-badge.visible { display: inline-block; }
-    .btn-close {
-      background: none;
+
+    /* ── Action buttons ─────────────────────────────────────────── */
+    .popup-actions { display: flex; flex-direction: column; gap: 6px; }
+    .btn-confirm {
+      width: 100%;
+      padding: 7px 10px;
+      background: #4CAF50;
+      color: white;
       border: none;
-      font-size: 16px;
-      color: #bbb;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
-      line-height: 1;
-      padding: 0;
-      flex-shrink: 0;
+      transition: background 0.15s;
+      text-align: center;
     }
-    .btn-close:hover { color: #888; }
+    .btn-confirm:hover  { background: #43A047; }
+    .btn-confirm:active { background: #388E3C; }
+    .btn-skip {
+      width: 100%;
+      padding: 6px 10px;
+      background: none;
+      color: #aaa;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .btn-skip:hover  { border-color: #ccc; color: #888; background: #fafafa; }
+    .btn-skip:active { background: #f0f0f0; }
+    .btn-skip.hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="popup">
-    <div class="icon" id="icon">💧</div>
-    <div class="content">
-      <div class="title" id="title">Uống nước</div>
-      <div class="body"  id="body">Đã đến giờ uống nước rồi!</div>
-      <div class="queue-badge" id="queue-badge"></div>
+    <div class="accent-bar" id="accent-bar"></div>
+    <div class="popup-inner">
+      <div class="popup-top">
+        <div class="icon" id="icon">💧</div>
+        <div class="content">
+          <div class="title" id="title">Uống nước</div>
+          <div class="body"  id="body">Đã đến giờ uống nước rồi!</div>
+          <div class="queue-badge" id="queue-badge"></div>
+        </div>
+      </div>
+      <div class="popup-actions">
+        <button class="btn-confirm" id="btn-confirm" onclick="confirmAction()"></button>
+        <button class="btn-skip"    id="btn-skip"    onclick="skipAction()"></button>
+      </div>
     </div>
-    <button class="btn-close" onclick="closePopup()">✕</button>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron')
 
-    const ICONS  = { water: '💧', move: '🏃', eyes: '👁️' }
+    const ICONS = { water: '💧', move: '🏃', eyes: '👁️' }
+    const ACCENT_COLORS = { water: '#1e88e5', move: '#4CAF50', eyes: '#fb8c00' }
 
     let currentKey = null
 
     ipcRenderer.on('popup-data', (event, data) => {
       currentKey = data.key
+
+      document.getElementById('accent-bar').style.background = ACCENT_COLORS[data.key] || '#4CAF50'
       document.getElementById('icon').textContent  = ICONS[data.key]
       document.getElementById('title').textContent = data.title
       document.getElementById('body').textContent  = data.body
+      document.getElementById('btn-confirm').textContent = data.btnConfirm
+      document.getElementById('btn-skip').textContent    = data.btnSkip
+
+      // Hide skip button if last action was a skip
+      document.getElementById('btn-skip').classList.toggle('hidden', !data.canSkip)
 
       const badge = document.getElementById('queue-badge')
       if (data.queueCount > 0) {
@@ -83,8 +136,12 @@
       }
     })
 
-    function closePopup() {
-      ipcRenderer.send('close-popup', currentKey)
+    function confirmAction() {
+      ipcRenderer.send('confirm-popup', currentKey)
+    }
+
+    function skipAction() {
+      ipcRenderer.send('skip-popup', currentKey)
     }
   </script>
 </body>

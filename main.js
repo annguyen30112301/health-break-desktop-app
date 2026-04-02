@@ -9,6 +9,7 @@ let tray
 let popupWindow = null
 let popupQueue = []   // hàng đợi các popup chưa hiển thị
 let isShowingPopup = false
+const lastSkipped = {}  // tracks whether the last action per key was a skip
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -87,16 +88,20 @@ function showNextPopup() {
   isShowingPopup = true
   const data = popupQueue.shift()
 
-  // Đính kèm số lượng còn trong queue để hiển thị badge
+  // Đính kèm số lượng còn trong queue và trạng thái có thể bỏ qua
   data.queueCount = popupQueue.length
+  data.canSkip = !lastSkipped[data.key]
 
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
 
+  // Chiều cao phụ thuộc vào việc nút "bỏ qua" có hiển thị không
+  const popupHeight = data.canSkip ? 162 : 128
+
   const win = new BrowserWindow({
     width: 300,
-    height: 90,
+    height: popupHeight,
     x: width - 316,
-    y: height - 106,
+    y: height - popupHeight - 16,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -142,16 +147,24 @@ ipcMain.on('show-popup', (event, data) => {
   enqueuePopup(data)
 })
 
-// User bấm ✕ — đóng popup hiện tại, reset timer, hiển thị popup tiếp theo
-ipcMain.on('close-popup', (event, key) => {
+// User bấm "Xác nhận đã thực hiện" — ghi nhận stat, reset timer
+ipcMain.on('confirm-popup', (event, key) => {
+  lastSkipped[key] = false
   destroyPopup()
+  if (key && mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+    mainWindow.webContents.send('popup-confirmed', key)
+    mainWindow.webContents.send('popup-closed', key)
+  }
+  showNextPopup()
+})
 
-  // Reset timer của key vừa đóng
+// User bấm "Bỏ qua lần này" — đóng popup, không ghi nhận stat
+ipcMain.on('skip-popup', (event, key) => {
+  lastSkipped[key] = true
+  destroyPopup()
   if (key && mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
     mainWindow.webContents.send('popup-closed', key)
   }
-
-  // Hiển thị popup tiếp theo trong queue (nếu có)
   showNextPopup()
 })
 
