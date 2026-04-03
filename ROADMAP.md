@@ -3,7 +3,7 @@
 > Cập nhật tự động sau mỗi commit. Xem chi tiết từng tính năng trong `tests/TEST-PLAN.md` và PRD tương ứng.
 
 **Last updated:** 2026-04-03
-**Overall progress:** 0 / 19 tasks (0%)
+**Overall progress:** 0 / 27 tasks (0%)
 
 ---
 
@@ -17,7 +17,7 @@
 ## Sprint 1 — Dashboard thống kê (PRD 1)
 > Mở dashboard trong trình duyệt, dữ liệu local 30 ngày, biểu đồ SVG, localized.
 
-**Progress:** 0 / 8 tasks
+**Progress:** 0 / 11 tasks
 
 ### Week 1 — Data layer & IPC
 - [ ] `stats-schema` — Mở rộng stats schema: thêm `skips` per key + `healthbreak-history` lưu 30 ngày
@@ -41,7 +41,7 @@
 ## Sprint 2 — Google SSO & Firebase (PRD 2)
 > Login Google optional, Online/Offline mode, sync settings lên Firestore.
 
-**Progress:** 0 / 5 tasks
+**Progress:** 0 / 8 tasks
 
 ### Week 3 — Firebase foundation & Auth
 - [ ] `firebase-setup` — Tạo Firebase project, bật Auth (Google provider), Firestore rules draft
