@@ -3,7 +3,7 @@
 > Cập nhật tự động sau mỗi commit. Xem chi tiết từng tính năng trong `tests/TEST-PLAN.md` và PRD tương ứng.
 
 **Last updated:** 2026-04-03
-**Overall progress:** 0 / 27 tasks (0%)
+**Overall progress:** 11 / 27 tasks (41%)
 
 ---
 
@@ -17,22 +17,22 @@
 ## Sprint 1 — Dashboard thống kê (PRD 1)
 > Mở dashboard trong trình duyệt, dữ liệu local 30 ngày, biểu đồ SVG, localized.
 
-**Progress:** 0 / 11 tasks
+**Progress:** 11 / 11 tasks ✅
 
 ### Week 1 — Data layer & IPC
-- [ ] `stats-schema` — Mở rộng stats schema: thêm `skips` per key + `healthbreak-history` lưu 30 ngày
-- [ ] `stats-migration` — Migration logic tương thích dữ liệu cũ (không break localStorage hiện có)
-- [ ] `ipc-dashboard` — IPC handler `open-dashboard` trong `main.js` → `shell.openExternal`
-- [ ] `ui-stats-btn` — Nút / icon "Thống kê" trong cửa sổ chính mở dashboard
+- [x] `stats-schema` — Mở rộng stats schema: thêm `skips` per key + `healthbreak-history` lưu 30 ngày
+- [x] `stats-migration` — Migration logic tương thích dữ liệu cũ (không break localStorage hiện có)
+- [x] `ipc-dashboard` — IPC handler `open-dashboard` trong `main.js` → `shell.openExternal`
+- [x] `ui-stats-btn` — Nút / icon "Thống kê" trong cửa sổ chính mở dashboard
 
 ### Week 2 — Dashboard UI & Charts
-- [ ] `dashboard-template` — HTML template self-contained với data JSON embedded
-- [ ] `chart-water` — Biểu đồ cột: water intake (ml/ngày), tooltip số lần confirm
-- [ ] `chart-eyes` — Biểu đồ cột: eye rest (phút/ngày = confirms × interval)
-- [ ] `chart-move` — Biểu đồ cột: vận động (số lần + phút/ngày)
-- [ ] `chart-skiprate` — Section skip rate riêng từng loại (water / move / eyes), hiển thị `—` nếu chưa có data
-- [ ] `chart-toggle` — Toggle 7 ngày / 30 ngày, re-render < 500ms
-- [ ] `dashboard-i18n` — Localization EN/VI toàn bộ text trong HTML template
+- [x] `dashboard-template` — HTML template self-contained với data JSON embedded
+- [x] `chart-water` — Biểu đồ cột: water intake (ml/ngày), tooltip số lần confirm
+- [x] `chart-eyes` — Biểu đồ cột: eye rest (phút/ngày = confirms × interval)
+- [x] `chart-move` — Biểu đồ cột: vận động (số lần + phút/ngày)
+- [x] `chart-skiprate` — Section skip rate riêng từng loại (water / move / eyes), hiển thị `—` nếu chưa có data
+- [x] `chart-toggle` — Toggle 7 ngày / 30 ngày, re-render < 500ms
+- [x] `dashboard-i18n` — Localization EN/VI toàn bộ text trong HTML template
 
 > **Ghi chú:** Sprint 1 = 11 tasks tổng (4 data layer + 7 chart/UI)
 
@@ -81,4 +81,14 @@ _Các task đã hoàn thành sẽ được chuyển vào đây kèm commit hash.
 
 | Task | Mô tả | Commit | Ngày |
 |------|--------|--------|------|
-| — | — | — | — |
+| `stats-schema` | Mở rộng stats schema: thêm `skips` per key + `healthbreak-history` lưu 30 ngày | 8510745 | 2026-04-03 |
+| `stats-migration` | Migration logic tương thích dữ liệu cũ | 8510745 | 2026-04-03 |
+| `ipc-dashboard` | IPC handler `open-dashboard` trong `main.js` → `shell.openExternal` | 8510745 | 2026-04-03 |
+| `ui-stats-btn` | Nút "Thống kê" trong cửa sổ chính mở dashboard | 8510745 | 2026-04-03 |
+| `dashboard-template` | HTML template self-contained với data JSON embedded | 8510745 | 2026-04-03 |
+| `chart-water` | Biểu đồ cột: water intake (ml/ngày) | 8510745 | 2026-04-03 |
+| `chart-eyes` | Biểu đồ cột: eye rest (phút/ngày) | 8510745 | 2026-04-03 |
+| `chart-move` | Biểu đồ cột: vận động (số lần + phút/ngày) | 8510745 | 2026-04-03 |
+| `chart-skiprate` | Section skip rate riêng từng loại | 8510745 | 2026-04-03 |
+| `chart-toggle` | Toggle 7 ngày / 30 ngày | 8510745 | 2026-04-03 |
+| `dashboard-i18n` | Localization EN/VI toàn bộ text | 8510745 | 2026-04-03 |
