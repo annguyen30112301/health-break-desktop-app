@@ -8,90 +8,10 @@
  * @returns {string} full HTML string
  */
 function generateDashboardHTML(history, lang, loc) {
-  const now = new Date()
-
-  // Helper: last N days as YYYY-MM-DD strings
-  function lastNDays(n) {
-    return Array.from({ length: n }, (_, i) => {
-      const d = new Date(now)
-      d.setDate(d.getDate() - (n - 1 - i))
-      return d.toISOString().slice(0, 10)
-    })
+  // Escape </script> sequences so embedded JSON cannot break out of the script block
+  function safeJSON(val) {
+    return JSON.stringify(val).replace(/<\//g, '<\\/')
   }
-
-  // Build lookup map from history
-  const byDate = {}
-  history.forEach(e => { byDate[e.date] = e })
-
-  function getEntry(date) {
-    return byDate[date] || { date, water: { confirms: 0, skips: 0, intervalMin: 30 }, move: { confirms: 0, skips: 0, intervalMin: 60 }, eyes: { confirms: 0, skips: 0, intervalMin: 20 } }
-  }
-
-  // Format date label DD/MM
-  function fmtDate(dateStr) {
-    const [, m, d] = dateStr.split('-')
-    return `${d}/${m}`
-  }
-
-  // SVG bar chart generator
-  function barChart(dates, values, color, unit, maxOverride) {
-    const W = 640, H = 160, PAD_LEFT = 48, PAD_BOT = 28, PAD_TOP = 12, PAD_RIGHT = 8
-    const chartW = W - PAD_LEFT - PAD_RIGHT
-    const chartH = H - PAD_BOT - PAD_TOP
-    const max = maxOverride || Math.max(...values, 1)
-    const barW = Math.max(4, Math.floor(chartW / values.length) - 3)
-    const step = chartW / values.length
-
-    const bars = values.map((v, i) => {
-      const bh = Math.round((v / max) * chartH)
-      const x  = PAD_LEFT + i * step + (step - barW) / 2
-      const y  = PAD_TOP + chartH - bh
-      return `<rect x="${x.toFixed(1)}" y="${y}" width="${barW}" height="${bh}" fill="${color}" rx="2" opacity="0.85">
-        <title>${fmtDate(dates[i])}: ${v} ${unit}</title>
-      </rect>`
-    }).join('\n      ')
-
-    // Y axis ticks (0 and max)
-    const yAxis = [0, 0.5, 1].map(t => {
-      const val  = Math.round(max * t)
-      const y    = PAD_TOP + chartH - Math.round(t * chartH)
-      return `<line x1="${PAD_LEFT - 4}" y1="${y}" x2="${PAD_LEFT + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>
-      <text x="${PAD_LEFT - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="#999">${val}</text>`
-    }).join('\n      ')
-
-    // X axis labels (show every N to avoid overlap)
-    const step_label = values.length > 14 ? 5 : values.length > 7 ? 2 : 1
-    const xLabels = dates.map((d, i) => {
-      if (i % step_label !== 0 && i !== dates.length - 1) return ''
-      const x = PAD_LEFT + i * step + step / 2
-      return `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="9" fill="#aaa">${fmtDate(d)}</text>`
-    }).join('\n      ')
-
-    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
-      ${yAxis}
-      <line x1="${PAD_LEFT}" y1="${PAD_TOP}" x2="${PAD_LEFT}" y2="${PAD_TOP + chartH}" stroke="#ddd" stroke-width="1"/>
-      ${bars}
-      ${xLabels}
-    </svg>`
-  }
-
-  // Skip rate pill
-  function skipPill(key, label, history_all) {
-    const totConfirms = history_all.reduce((s, e) => s + (e[key]?.confirms || 0), 0)
-    const totSkips    = history_all.reduce((s, e) => s + (e[key]?.skips    || 0), 0)
-    const total       = totConfirms + totSkips
-    if (total === 0) return `<div class="pill"><span class="pill-label">${label}</span><span class="pill-val">—</span></div>`
-    const rate = ((totSkips / total) * 100).toFixed(1)
-    const color = rate > 50 ? '#e53935' : rate > 25 ? '#fb8c00' : '#43a047'
-    return `<div class="pill">
-      <span class="pill-label">${label}</span>
-      <span class="pill-val" style="color:${color}">${rate}%</span>
-      <span class="pill-sub">${totSkips} ${loc.skips} / ${total}</span>
-    </div>`
-  }
-
-  // Embed data for JS toggle
-  const dataJSON = JSON.stringify(history)
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -148,15 +68,17 @@ function generateDashboardHTML(history, lang, loc) {
 <div class="footer">HealthBreak — ${loc.title}</div>
 
 <script>
-const LOC = ${JSON.stringify(loc)};
-const HISTORY = ${dataJSON};
+const LOC     = ${safeJSON(loc)};
+const HISTORY = ${safeJSON(history)};
 
+// Returns last N days as local YYYY-MM-DD strings
 function lastNDays(n) {
   const now = new Date();
   return Array.from({ length: n }, (_, i) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - (n - 1 - i));
-    return d.toISOString().slice(0, 10);
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (n - 1 - i));
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
   });
 }
 

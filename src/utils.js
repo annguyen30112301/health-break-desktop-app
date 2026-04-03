@@ -1,14 +1,14 @@
 'use strict'
 
-// Calculate daily water goal from weight and height.
+// Calculate daily water goal from weight (weight-only formula: 35ml/kg).
 // dailyGoal = nearest 50ml of (weightKg * 35ml/kg)
 // sessions  = max(1, round(dailyGoal / 250))
 // mlPerSession = round(dailyGoal / sessions)
-function calcWaterGoal(heightCm, weightKg) {
+function calcWaterGoal(weightKg) {
   const dailyGoal    = Math.round(weightKg * 35 / 50) * 50
   const sessions     = Math.max(1, Math.round(dailyGoal / 250))
   const mlPerSession = Math.round(dailyGoal / sessions)
-  return { height: heightCm, weight: weightKg, dailyGoal, sessions, mlPerSession }
+  return { weight: weightKg, dailyGoal, sessions, mlPerSession }
 }
 
 // Format seconds to "MM:SS"

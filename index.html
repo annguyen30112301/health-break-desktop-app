@@ -1108,10 +1108,9 @@
 
   function onGoalInputChange() {
     const w = parseFloat(document.getElementById('input-weight').value)
-    const h = parseFloat(document.getElementById('input-height').value) || 170
     const el = document.getElementById('goal-recommendation')
     if (w >= 30 && w <= 200) {
-      const g = calcWaterGoal(h, w)
+      const g = calcWaterGoal(w)
       el.textContent = locale.waterGoal.recommendation(g.sessions, g.mlPerSession)
     } else {
       el.textContent = ''
@@ -1120,10 +1119,9 @@
 
   function saveWaterGoalAndApply() {
     const w = parseFloat(document.getElementById('input-weight').value)
-    const h = parseFloat(document.getElementById('input-height').value) || 170
     if (!w || w < 30 || w > 200) return
 
-    waterGoal = calcWaterGoal(h, w)
+    waterGoal = calcWaterGoal(w)
     persistWaterGoal()
 
     // Suggest interval: spread sessions across 16 active hours, clamped to valid range
@@ -1155,7 +1153,8 @@
   const HISTORY_KEY = 'healthbreak-history'
 
   function todayStr() {
-    return new Date().toISOString().slice(0, 10)
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   }
 
   function loadStats() {
@@ -1260,10 +1259,9 @@
 
   function onOnboardInputChange() {
     const w  = parseFloat(document.getElementById('onboard-weight').value)
-    const h  = parseFloat(document.getElementById('onboard-height').value) || 170
     const el = document.getElementById('onboard-recommendation')
     if (w >= 30 && w <= 200) {
-      const g = calcWaterGoal(h, w)
+      const g = calcWaterGoal(w)
       el.textContent = locale.waterGoal.recommendation(g.sessions, g.mlPerSession)
     } else {
       el.textContent = ''
@@ -1273,9 +1271,14 @@
   function finishOnboarding(skip) {
     if (!skip) {
       const w = parseFloat(document.getElementById('onboard-weight').value)
-      const h = parseFloat(document.getElementById('onboard-height').value) || 170
+      if (!(w >= 30 && w <= 200)) {
+        const el = document.getElementById('onboard-recommendation')
+        el.style.color = '#e53935'
+        el.textContent = locale.waterGoal.invalidWeight || (w ? 'Weight must be 30–200 kg' : 'Please enter your weight')
+        return
+      }
       if (w >= 30 && w <= 200) {
-        waterGoal = calcWaterGoal(h, w)
+        waterGoal = calcWaterGoal(w)
         persistWaterGoal()
 
         // Auto-apply suggested interval (clamped to valid range)

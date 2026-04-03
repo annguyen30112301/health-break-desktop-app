@@ -100,8 +100,8 @@
         </div>
       </div>
       <div class="popup-actions">
-        <button class="btn-confirm" id="btn-confirm" onclick="confirmAction()"></button>
-        <button class="btn-skip"    id="btn-skip"    onclick="skipAction()"></button>
+        <button class="btn-confirm" id="btn-confirm" onclick="confirmAction()" disabled></button>
+        <button class="btn-skip"    id="btn-skip"    onclick="skipAction()"    disabled></button>
       </div>
     </div>
   </div>
@@ -121,15 +121,19 @@
       document.getElementById('icon').textContent  = ICONS[data.key]
       document.getElementById('title').textContent = data.title
       document.getElementById('body').textContent  = data.body
-      document.getElementById('btn-confirm').textContent = data.btnConfirm
-      document.getElementById('btn-skip').textContent    = data.btnSkip
+      const btnConfirm = document.getElementById('btn-confirm')
+      const btnSkip    = document.getElementById('btn-skip')
+      btnConfirm.textContent = data.btnConfirm
+      btnSkip.textContent    = data.btnSkip
+      btnConfirm.disabled    = false
+      btnSkip.disabled       = false
 
       // Hide skip button if last action was a skip
-      document.getElementById('btn-skip').classList.toggle('hidden', !data.canSkip)
+      btnSkip.classList.toggle('hidden', !data.canSkip)
 
       const badge = document.getElementById('queue-badge')
-      if (data.queueCount > 0) {
-        badge.textContent = `+${data.queueCount} nhắc nhở đang chờ`
+      if (data.queueCount > 0 && data.queueBadge) {
+        badge.textContent = data.queueBadge
         badge.classList.add('visible')
       } else {
         badge.classList.remove('visible')
