@@ -4,8 +4,9 @@ module.exports = {
   subtitle: 'Nhắc nhở sức khỏe khi làm việc với máy tính',
 
   testing: {
-    badge: 'TESTING MODE — giới hạn tối thiểu hạ xuống 1 phút',
-    exit:  'Thoát testing',
+    badge:      'TESTING MODE — giới hạn tối thiểu hạ xuống 1 phút',
+    clearCache: 'Xóa cache',
+    exit:       'Thoát testing',
   },
 
   reminders: {

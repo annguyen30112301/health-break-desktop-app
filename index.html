@@ -74,6 +74,18 @@
       white-space: nowrap;
     }
     .testing-badge .btn-exit-test:hover { background: #fff3e0; }
+    .testing-badge .btn-clear-cache {
+      background: none;
+      border: 1px solid #c62828;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #c62828;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .testing-badge .btn-clear-cache:hover { background: #ffebee; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
     /* ── Cards ───────────────────────────────────────────────────── */
@@ -433,6 +445,7 @@
 <div class="testing-badge" id="testing-badge">
   <div class="dot"></div>
   <span id="testing-text"></span>
+  <button class="btn-clear-cache" id="btn-clear-cache" onclick="clearCache()"></button>
   <button class="btn-exit-test" id="btn-exit-test" onclick="exitTestingMode()"></button>
 </div>
 
@@ -642,8 +655,9 @@
     document.getElementById('app-subtitle').textContent = locale.subtitle
 
     // Testing badge
-    document.getElementById('testing-text').textContent   = locale.testing.badge
-    document.getElementById('btn-exit-test').textContent  = locale.testing.exit
+    document.getElementById('testing-text').textContent      = locale.testing.badge
+    document.getElementById('btn-clear-cache').textContent  = locale.testing.clearCache
+    document.getElementById('btn-exit-test').textContent    = locale.testing.exit
 
     // Reminder cards
     ;['water', 'move', 'eyes'].forEach(key => {
@@ -812,6 +826,11 @@
       document.getElementById(`min-label-${key}`).textContent = `${limits.min}${locale.minShort}`
     })
     saveSettings()
+  }
+
+  function clearCache() {
+    ;[STORAGE_KEY, WATER_GOAL_KEY, STATS_KEY, ONBOARDED_KEY].forEach(k => localStorage.removeItem(k))
+    location.reload()
   }
   // ────────────────────────────────────────────────────────────────────────
 

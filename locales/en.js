@@ -4,8 +4,9 @@ module.exports = {
   subtitle: 'Health reminders while working at the computer',
 
   testing: {
-    badge: 'TESTING MODE — minimum interval lowered to 1 minute',
-    exit:  'Exit testing',
+    badge:      'TESTING MODE — minimum interval lowered to 1 minute',
+    clearCache: 'Clear cache',
+    exit:       'Exit testing',
   },
 
   reminders: {
