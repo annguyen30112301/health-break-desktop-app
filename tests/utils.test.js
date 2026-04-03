@@ -6,53 +6,54 @@ const {
   calcSuggestedWaterInterval,
   clampInterval,
   parseStats,
+  parseHistory,
+  appendToHistory,
 } = require('../src/utils')
 
 // ── calcWaterGoal ────────────────────────────────────────────────────────────
 
 describe('calcWaterGoal', () => {
   it('calculates correct dailyGoal, sessions and mlPerSession for average person (70kg)', () => {
-    const result = calcWaterGoal(170, 70)
+    const result = calcWaterGoal(70)
     expect(result.dailyGoal).toBe(2450)
     expect(result.sessions).toBe(10)
     expect(result.mlPerSession).toBe(245)
   })
 
-  it('stores height and weight in result', () => {
-    const result = calcWaterGoal(165, 55)
-    expect(result.height).toBe(165)
+  it('stores weight in result', () => {
+    const result = calcWaterGoal(55)
     expect(result.weight).toBe(55)
   })
 
   it('rounds daily goal to nearest 50ml', () => {
     // 60 * 35 = 2100, 2100/50=42, round=42, *50=2100
-    const result = calcWaterGoal(170, 60)
+    const result = calcWaterGoal(60)
     expect(result.dailyGoal % 50).toBe(0)
   })
 
   it('ensures sessions is at least 1 for very low weight', () => {
     // 5 * 35 = 175, 175/50=3.5, round=4, *50=200 → sessions=max(1, round(200/250))=max(1,1)=1
-    const result = calcWaterGoal(150, 5)
+    const result = calcWaterGoal(5)
     expect(result.sessions).toBeGreaterThanOrEqual(1)
   })
 
   it('calculates correctly for minimum valid weight (30kg)', () => {
     // 30*35=1050, 1050/50=21, round=21, *50=1050
-    const result = calcWaterGoal(150, 30)
+    const result = calcWaterGoal(30)
     expect(result.dailyGoal).toBe(1050)
     expect(result.sessions).toBe(Math.max(1, Math.round(1050 / 250)))
   })
 
   it('calculates correctly for maximum valid weight (200kg)', () => {
     // 200*35=7000, 7000/50=140, *50=7000
-    const result = calcWaterGoal(180, 200)
+    const result = calcWaterGoal(200)
     expect(result.dailyGoal).toBe(7000)
     expect(result.sessions).toBe(28)
     expect(result.mlPerSession).toBe(250)
   })
 
   it('mlPerSession is always a rounded integer', () => {
-    const result = calcWaterGoal(170, 73)
+    const result = calcWaterGoal(73)
     expect(Number.isInteger(result.mlPerSession)).toBe(true)
   })
 })
@@ -170,12 +171,11 @@ describe('clampInterval', () => {
   })
 })
 
-const { parseHistory, appendToHistory } = require('../src/utils')
-
 // ── parseStats ───────────────────────────────────────────────────────────────
 
 describe('parseStats', () => {
-  const today = '2026-04-03'
+  // Use a fixed date string independent of when tests run
+  const today = '2100-01-01'
 
   it('returns zeroed stats when raw is null', () => {
     const result = parseStats(null, today)
@@ -193,7 +193,7 @@ describe('parseStats', () => {
   })
 
   it('returns zeroed stats when stored date is different from today (stale)', () => {
-    const stale = JSON.stringify({ date: '2026-04-01', water: 3, move: 2, eyes: 5 })
+    const stale = JSON.stringify({ date: '2099-12-31', water: 3, move: 2, eyes: 5 })
     const result = parseStats(stale, today)
     expect(result).toEqual({ date: today, water: 0, move: 0, eyes: 0 })
   })
@@ -211,6 +211,8 @@ describe('parseStats', () => {
   })
 })
 
+// ── parseHistory ──────────────────────────────────────────────────────────────
+
 describe('parseHistory', () => {
   it('returns empty array when raw is null', () => {
     expect(parseHistory(null)).toEqual([])
@@ -225,14 +227,16 @@ describe('parseHistory', () => {
   })
 
   it('returns empty array when parsed value is not an array', () => {
-    expect(parseHistory('{"date":"2026-04-03"}')).toEqual([])
+    expect(parseHistory('{"date":"2100-01-01"}')).toEqual([])
   })
 
   it('returns parsed array for valid history JSON', () => {
-    const entry = { date: '2026-04-03', water: { confirms: 3, skips: 1, intervalMin: 30 }, move: { confirms: 1, skips: 0, intervalMin: 60 }, eyes: { confirms: 5, skips: 2, intervalMin: 20 } }
+    const entry = { date: '2100-01-01', water: { confirms: 3, skips: 1, intervalMin: 30 }, move: { confirms: 1, skips: 0, intervalMin: 60 }, eyes: { confirms: 5, skips: 2, intervalMin: 20 } }
     expect(parseHistory(JSON.stringify([entry]))).toEqual([entry])
   })
 })
+
+// ── appendToHistory ───────────────────────────────────────────────────────────
 
 describe('appendToHistory', () => {
   const makeEntry = (date) => ({
@@ -243,42 +247,45 @@ describe('appendToHistory', () => {
   })
 
   it('appends a new entry to empty history', () => {
-    const result = appendToHistory([], makeEntry('2026-04-03'))
+    const result = appendToHistory([], makeEntry('2100-01-01'))
     expect(result).toHaveLength(1)
-    expect(result[0].date).toBe('2026-04-03')
+    expect(result[0].date).toBe('2100-01-01')
   })
 
   it('replaces existing entry for same date', () => {
-    const old = makeEntry('2026-04-03')
+    const old = makeEntry('2100-01-01')
     old.water.confirms = 1
-    const updated = { ...makeEntry('2026-04-03'), water: { confirms: 5, skips: 1, intervalMin: 30 } }
+    const updated = { ...makeEntry('2100-01-01'), water: { confirms: 5, skips: 1, intervalMin: 30 } }
     const result = appendToHistory([old], updated)
     expect(result).toHaveLength(1)
     expect(result[0].water.confirms).toBe(5)
   })
 
   it('keeps entries from different dates', () => {
-    const history = [makeEntry('2026-04-01'), makeEntry('2026-04-02')]
-    const result = appendToHistory(history, makeEntry('2026-04-03'))
+    const history = [makeEntry('2099-12-30'), makeEntry('2099-12-31')]
+    const result = appendToHistory(history, makeEntry('2100-01-01'))
     expect(result).toHaveLength(3)
   })
 
   it('drops oldest entries when history exceeds 30 days', () => {
     const history = Array.from({ length: 30 }, (_, i) => {
-      const d = new Date('2026-03-01')
+      const d = new Date('2099-12-01')
       d.setDate(d.getDate() + i)
       return makeEntry(d.toISOString().slice(0, 10))
     })
-    const result = appendToHistory(history, makeEntry('2026-04-03'))
+    const result = appendToHistory(history, makeEntry('2100-01-01'))
     expect(result).toHaveLength(30)
-    expect(result[result.length - 1].date).toBe('2026-04-03')
-    expect(result[0].date).not.toBe('2026-03-01')
+    expect(result[result.length - 1].date).toBe('2100-01-01')
+    expect(result[0].date).not.toBe('2099-12-01')
   })
 
   it('keeps up to 30 entries maximum', () => {
-    const history = Array.from({ length: 35 }, (_, i) => makeEntry(`2026-0${Math.floor(i/10)+1}-${String((i%10)+1).padStart(2,'0')}`))
-    // just verify the function handles large input
-    const result = appendToHistory(history, makeEntry('2026-04-03'))
+    const history = Array.from({ length: 35 }, (_, i) => {
+      const d = new Date('2099-11-01')
+      d.setDate(d.getDate() + i)
+      return makeEntry(d.toISOString().slice(0, 10))
+    })
+    const result = appendToHistory(history, makeEntry('2100-01-01'))
     expect(result.length).toBeLessThanOrEqual(30)
   })
 })

@@ -142,8 +142,9 @@ function showNextPopup() {
   const data = popupQueue.shift()
 
   // Đính kèm số lượng còn trong queue và trạng thái có thể bỏ qua
-  data.queueCount = popupQueue.length
-  data.canSkip = !lastSkipped[data.key]
+  data.queueCount    = popupQueue.length
+  data.queueBadge    = popupQueue.length > 0 ? currentLocale.popup.queueBadge(popupQueue.length) : ''
+  data.canSkip       = !lastSkipped[data.key]
 
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
 
@@ -235,7 +236,7 @@ ipcMain.on('open-dashboard', (event, { history, lang, loc }) => {
   try {
     const { generateDashboardHTML } = require('./src/dashboard.js')
     const html     = generateDashboardHTML(history, lang, loc)
-    const tmpFile  = path.join(os.tmpdir(), `healthbreak-stats-${Date.now()}.html`)
+    const tmpFile  = path.join(os.tmpdir(), 'healthbreak-stats.html')
     fs.writeFileSync(tmpFile, html, 'utf8')
     shell.openExternal(`file://${tmpFile}`)
   } catch (e) {
@@ -244,6 +245,7 @@ ipcMain.on('open-dashboard', (event, { history, lang, loc }) => {
 })
 
 ipcMain.on('set-language', (event, lang) => {
+  if (!['en', 'vi'].includes(lang)) return
   try {
     currentLocale = require(`./locales/${lang}.js`)
   } catch {

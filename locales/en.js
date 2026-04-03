@@ -125,8 +125,9 @@ module.exports = {
   },
 
   popup: {
-    confirm: '✓ Done!',
-    skip:    'Busy, skip this time',
+    confirm:    '✓ Done!',
+    skip:       'Busy, skip this time',
+    queueBadge: (n) => `+${n} more waiting`,
   },
 
   stats: {
@@ -151,6 +152,7 @@ module.exports = {
     saveBtn:        'Save water goal',
     recommendation: (sessions, ml) =>
       `Goal: ${sessions} reminders/day · ~${Math.round(ml)}ml each`,
+    invalidWeight:  'Please enter a valid weight (30–200 kg)',
     statsWithGoal:  (intakeMl, goalMl) =>
       `${intakeMl}ml / ${goalMl}ml today · ${Math.max(0, goalMl - intakeMl)}ml left`,
     popupBody:      (ml, remainingMl) => remainingMl > 0

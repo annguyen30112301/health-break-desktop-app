@@ -125,8 +125,9 @@ module.exports = {
   },
 
   popup: {
-    confirm: '✓ Xác nhận đã thực hiện',
-    skip:    'Tôi đang bận, bỏ qua lần này',
+    confirm:    '✓ Xác nhận đã thực hiện',
+    skip:       'Tôi đang bận, bỏ qua lần này',
+    queueBadge: (n) => `+${n} nhắc nhở đang chờ`,
   },
 
   stats: {
@@ -151,6 +152,7 @@ module.exports = {
     saveBtn:        'Lưu mục tiêu uống nước',
     recommendation: (sessions, ml) =>
       `Gợi ý: ${sessions} lần/ngày · ~${Math.round(ml)}ml mỗi lần`,
+    invalidWeight:  'Vui lòng nhập cân nặng hợp lệ (30–200 kg)',
     statsWithGoal:  (intakeMl, goalMl) =>
       `${intakeMl}ml / ${goalMl}ml hôm nay · còn ${Math.max(0, goalMl - intakeMl)}ml`,
     popupBody:      (ml, remainingMl) => remainingMl > 0
