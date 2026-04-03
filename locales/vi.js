@@ -87,6 +87,27 @@ module.exports = {
     desc: 'Chạy nền khi đăng nhập máy tính',
   },
 
+  dashboard: {
+    btnOpen:       'Thống kê',
+    title:         'Thống kê sức khỏe',
+    subtitle:      'Hoạt động của bạn trong',
+    days:          'ngày qua',
+    toggle7:       '7 ngày',
+    toggle30:      '30 ngày',
+    water:         'Lượng nước uống',
+    waterUnit:     'ml',
+    eyes:          'Thời gian nghỉ mắt',
+    eyesUnit:      'phút',
+    move:          'Vận động nhẹ',
+    moveUnitTimes: 'lần',
+    moveUnitMin:   'phút',
+    skipRate:      'Tỷ lệ bỏ qua',
+    skipRateDesc:  'Tỷ lệ nhắc nhở bạn đã bỏ qua',
+    noData:        'Chưa có dữ liệu',
+    confirms:      'lần xác nhận',
+    skips:         'lần bỏ qua',
+  },
+
   status: {
     running: (n) => `Đang chạy · <span>${n} nhắc nhở</span> đang hoạt động`,
     allOff:  'Tất cả nhắc nhở đang <span style="color:#ccc">tắt</span>',

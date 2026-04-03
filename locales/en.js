@@ -87,6 +87,27 @@ module.exports = {
     desc: 'Run in background on login',
   },
 
+  dashboard: {
+    btnOpen:       'Stats',
+    title:         'Health Statistics',
+    subtitle:      'Your activity over the last',
+    days:          'days',
+    toggle7:       '7 days',
+    toggle30:      '30 days',
+    water:         'Water Intake',
+    waterUnit:     'ml',
+    eyes:          'Eye Rest',
+    eyesUnit:      'min',
+    move:          'Exercise',
+    moveUnitTimes: 'times',
+    moveUnitMin:   'min',
+    skipRate:      'Skip Rate',
+    skipRateDesc:  'Percentage of reminders you skipped',
+    noData:        'No data yet',
+    confirms:      'confirms',
+    skips:         'skips',
+  },
+
   status: {
     running: (n) => `Running · <span>${n} reminder${n !== 1 ? 's' : ''}</span> active`,
     allOff:  'All reminders are <span style="color:#ccc">off</span>',

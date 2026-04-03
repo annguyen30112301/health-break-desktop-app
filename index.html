@@ -38,6 +38,19 @@
     }
     .lang-btn:hover { border-color: #4CAF50; color: #4CAF50; }
     .lang-btn.active { background: #4CAF50; border-color: #4CAF50; color: white; }
+    .btn-stats {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4CAF50;
+      cursor: pointer;
+      transition: all 0.15s;
+      border-color: #4CAF50;
+    }
+    .btn-stats:hover { background: #f1f8f1; }
 
     /* ── Testing mode badge ──────────────────────────────────────── */
     .testing-badge {
@@ -438,6 +451,7 @@
   <div class="lang-switcher">
     <button id="btn-lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
     <button id="btn-lang-vi" class="lang-btn" onclick="setLanguage('vi')">VI</button>
+    <button class="btn-stats" id="btn-stats" onclick="openDashboard()"></button>
   </div>
 </div>
 
@@ -689,6 +703,9 @@
     document.getElementById('autolaunch-name').textContent = locale.autoLaunch.name
     document.getElementById('autolaunch-desc').textContent = locale.autoLaunch.desc
 
+    // Stats button
+    document.getElementById('btn-stats').textContent = locale.dashboard.btnOpen
+
     // Language switcher active state
     document.getElementById('btn-lang-en').classList.toggle('active', currentLang === 'en')
     document.getElementById('btn-lang-vi').classList.toggle('active', currentLang === 'vi')
@@ -829,7 +846,7 @@
   }
 
   function clearCache() {
-    ;[STORAGE_KEY, WATER_GOAL_KEY, STATS_KEY, ONBOARDED_KEY].forEach(k => localStorage.removeItem(k))
+    ;[STORAGE_KEY, WATER_GOAL_KEY, STATS_KEY, HISTORY_KEY, ONBOARDED_KEY].forEach(k => localStorage.removeItem(k))
     location.reload()
   }
   // ────────────────────────────────────────────────────────────────────────
@@ -850,6 +867,13 @@
 
   ipcRenderer.on('popup-confirmed', (event, key) => {
     incrementStat(key)
+  })
+
+  ipcRenderer.on('popup-skipped', (event, key) => {
+    const skipKey = key + '_skips'
+    dailyStats[skipKey] = (dailyStats[skipKey] || 0) + 1
+    saveStats(dailyStats)
+    syncTodayToHistory()
   })
   // ────────────────────────────────────────────────────────────────────────
 
@@ -1080,7 +1104,7 @@
     else localStorage.removeItem(WATER_GOAL_KEY)
   }
 
-  const { calcWaterGoal, formatTime, calcSuggestedWaterInterval, clampInterval, parseStats } = require('./src/utils.js')
+  const { calcWaterGoal, formatTime, calcSuggestedWaterInterval, clampInterval, parseStats, parseHistory, appendToHistory } = require('./src/utils.js')
 
   function onGoalInputChange() {
     const w = parseFloat(document.getElementById('input-weight').value)
@@ -1127,18 +1151,43 @@
   // ────────────────────────────────────────────────────────────────────────
 
   // ── Daily stats ───────────────────────────────────────────────────────────
-  const STATS_KEY = 'healthbreak-daily-stats'
+  const STATS_KEY   = 'healthbreak-daily-stats'
+  const HISTORY_KEY = 'healthbreak-history'
 
   function todayStr() {
     return new Date().toISOString().slice(0, 10)
   }
 
   function loadStats() {
-    return parseStats(localStorage.getItem(STATS_KEY), todayStr())
+    const s = parseStats(localStorage.getItem(STATS_KEY), todayStr())
+    // ensure skip fields exist
+    s.water_skips = s.water_skips || 0
+    s.move_skips  = s.move_skips  || 0
+    s.eyes_skips  = s.eyes_skips  || 0
+    return s
   }
 
   function saveStats(s) {
     localStorage.setItem(STATS_KEY, JSON.stringify(s))
+  }
+
+  function loadHistory() {
+    return parseHistory(localStorage.getItem(HISTORY_KEY))
+  }
+
+  function saveHistory(history) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+  }
+
+  function syncTodayToHistory() {
+    const todayEntry = {
+      date:  todayStr(),
+      water: { confirms: dailyStats.water || 0, skips: dailyStats.water_skips || 0, intervalMin: Math.round(reminders.water.interval / 60) },
+      move:  { confirms: dailyStats.move  || 0, skips: dailyStats.move_skips  || 0, intervalMin: Math.round(reminders.move.interval  / 60) },
+      eyes:  { confirms: dailyStats.eyes  || 0, skips: dailyStats.eyes_skips  || 0, intervalMin: Math.round(reminders.eyes.interval  / 60) },
+    }
+    const history = loadHistory()
+    saveHistory(appendToHistory(history, todayEntry))
   }
 
   let dailyStats = loadStats()
@@ -1146,7 +1195,17 @@
   function incrementStat(key) {
     dailyStats[key] = (dailyStats[key] || 0) + 1
     saveStats(dailyStats)
+    syncTodayToHistory()
     renderStatsDisplay(key)
+  }
+
+  function openDashboard() {
+    const history = loadHistory()
+    ipcRenderer.send('open-dashboard', {
+      history,
+      lang: currentLang,
+      loc:  locale.dashboard,
+    })
   }
 
   function renderStatsDisplay(key) {

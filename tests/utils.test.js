@@ -170,6 +170,8 @@ describe('clampInterval', () => {
   })
 })
 
+const { parseHistory, appendToHistory } = require('../src/utils')
+
 // ── parseStats ───────────────────────────────────────────────────────────────
 
 describe('parseStats', () => {
@@ -206,5 +208,77 @@ describe('parseStats', () => {
     const result = parseStats(undefined, today)
     expect(result.date).toBe(today)
     expect(result.water).toBe(0)
+  })
+})
+
+describe('parseHistory', () => {
+  it('returns empty array when raw is null', () => {
+    expect(parseHistory(null)).toEqual([])
+  })
+
+  it('returns empty array when raw is empty string', () => {
+    expect(parseHistory('')).toEqual([])
+  })
+
+  it('returns empty array when JSON is corrupt', () => {
+    expect(parseHistory('not-json{{{')).toEqual([])
+  })
+
+  it('returns empty array when parsed value is not an array', () => {
+    expect(parseHistory('{"date":"2026-04-03"}')).toEqual([])
+  })
+
+  it('returns parsed array for valid history JSON', () => {
+    const entry = { date: '2026-04-03', water: { confirms: 3, skips: 1, intervalMin: 30 }, move: { confirms: 1, skips: 0, intervalMin: 60 }, eyes: { confirms: 5, skips: 2, intervalMin: 20 } }
+    expect(parseHistory(JSON.stringify([entry]))).toEqual([entry])
+  })
+})
+
+describe('appendToHistory', () => {
+  const makeEntry = (date) => ({
+    date,
+    water: { confirms: 1, skips: 0, intervalMin: 30 },
+    move:  { confirms: 1, skips: 0, intervalMin: 60 },
+    eyes:  { confirms: 1, skips: 0, intervalMin: 20 },
+  })
+
+  it('appends a new entry to empty history', () => {
+    const result = appendToHistory([], makeEntry('2026-04-03'))
+    expect(result).toHaveLength(1)
+    expect(result[0].date).toBe('2026-04-03')
+  })
+
+  it('replaces existing entry for same date', () => {
+    const old = makeEntry('2026-04-03')
+    old.water.confirms = 1
+    const updated = { ...makeEntry('2026-04-03'), water: { confirms: 5, skips: 1, intervalMin: 30 } }
+    const result = appendToHistory([old], updated)
+    expect(result).toHaveLength(1)
+    expect(result[0].water.confirms).toBe(5)
+  })
+
+  it('keeps entries from different dates', () => {
+    const history = [makeEntry('2026-04-01'), makeEntry('2026-04-02')]
+    const result = appendToHistory(history, makeEntry('2026-04-03'))
+    expect(result).toHaveLength(3)
+  })
+
+  it('drops oldest entries when history exceeds 30 days', () => {
+    const history = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date('2026-03-01')
+      d.setDate(d.getDate() + i)
+      return makeEntry(d.toISOString().slice(0, 10))
+    })
+    const result = appendToHistory(history, makeEntry('2026-04-03'))
+    expect(result).toHaveLength(30)
+    expect(result[result.length - 1].date).toBe('2026-04-03')
+    expect(result[0].date).not.toBe('2026-03-01')
+  })
+
+  it('keeps up to 30 entries maximum', () => {
+    const history = Array.from({ length: 35 }, (_, i) => makeEntry(`2026-0${Math.floor(i/10)+1}-${String((i%10)+1).padStart(2,'0')}`))
+    // just verify the function handles large input
+    const result = appendToHistory(history, makeEntry('2026-04-03'))
+    expect(result.length).toBeLessThanOrEqual(30)
   })
 })

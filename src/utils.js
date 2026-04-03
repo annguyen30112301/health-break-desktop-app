@@ -40,4 +40,23 @@ function parseStats(raw, today) {
   } catch { return empty }
 }
 
-module.exports = { calcWaterGoal, formatTime, calcSuggestedWaterInterval, clampInterval, parseStats }
+// Parse raw history JSON string. Returns array of up to 30 daily entries.
+// Each entry: { date, water:{confirms,skips,intervalMin}, move:{...}, eyes:{...} }
+function parseHistory(raw) {
+  try {
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    if (!Array.isArray(arr)) return []
+    return arr
+  } catch { return [] }
+}
+
+// Append today's stats entry to history array, drop entries older than 30 days.
+// todayEntry: { date, water:{confirms,skips,intervalMin}, move:{...}, eyes:{...} }
+function appendToHistory(history, todayEntry) {
+  const filtered = history.filter(e => e.date !== todayEntry.date)
+  const updated  = [...filtered, todayEntry]
+  return updated.slice(-30)
+}
+
+module.exports = { calcWaterGoal, formatTime, calcSuggestedWaterInterval, clampInterval, parseStats, parseHistory, appendToHistory }
