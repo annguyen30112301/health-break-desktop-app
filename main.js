@@ -21,7 +21,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      autoplayPolicy: 'no-user-gesture-required'
+      autoplayPolicy: 'no-user-gesture-required',
+      backgroundThrottling: false
     },
     title: 'HealthBreak',
     icon: path.join(__dirname, 'app-icon.png')
