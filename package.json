@@ -5,8 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test": "jest",
     "setup:wincodecsign": "node scripts/setup-wincodecsign.js",
-    "build:win": "npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
+    "build:win": "npm test && npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
     "build:win:dir": "npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win dir",
     "build:mac": "electron-builder --mac",
     "build": "electron-builder"
@@ -18,7 +19,14 @@
   "devDependencies": {
     "cross-env": "^7.0.3",
     "electron": "^41.1.1",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "testEnvironment": "node"
   },
   "build": {
     "appId": "com.healthbreak.app",
@@ -36,7 +44,8 @@
       "app-icon.png",
       "tray-icon.png",
       "package.json",
-      "locales/**"
+      "locales/**",
+      "src/**"
     ],
     "win": {
       "target": [

@@ -873,12 +873,6 @@
     playSound(key)
   }
 
-  function formatTime(seconds) {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  }
-
   function startTimer(key) {
     const r = reminders[key]
     if (r.timer) clearInterval(r.timer)
@@ -994,7 +988,7 @@
         const s      = settings[key]
         const r      = reminders[key]
         const limits = NORMAL_LIMITS[key]
-        const minutes = Math.min(Math.max(Math.round(s.interval / 60), limits.min), limits.max)
+        const minutes = clampInterval(s.interval / 60, limits)
         r.interval        = minutes * 60
         r.remaining       = r.interval
         r.pendingInterval = r.interval
@@ -1086,12 +1080,7 @@
     else localStorage.removeItem(WATER_GOAL_KEY)
   }
 
-  function calcWaterGoal(heightCm, weightKg) {
-    const dailyGoal    = Math.round(weightKg * 35 / 50) * 50   // round to nearest 50ml
-    const sessions     = Math.max(1, Math.round(dailyGoal / 250))
-    const mlPerSession = Math.round(dailyGoal / sessions)
-    return { height: heightCm, weight: weightKg, dailyGoal, sessions, mlPerSession }
-  }
+  const { calcWaterGoal, formatTime, calcSuggestedWaterInterval, clampInterval, parseStats } = require('./src/utils.js')
 
   function onGoalInputChange() {
     const w = parseFloat(document.getElementById('input-weight').value)
@@ -1115,8 +1104,7 @@
 
     // Suggest interval: spread sessions across 16 active hours, clamped to valid range
     const limits      = isTestingMode ? TESTING_LIMITS.water : NORMAL_LIMITS.water
-    const suggestedMin = Math.round(16 * 60 / waterGoal.sessions)
-    const clampedMin  = Math.min(Math.max(suggestedMin, limits.min), limits.max)
+    const clampedMin = calcSuggestedWaterInterval(waterGoal.sessions, limits)
     const r           = reminders.water
     r.pendingInterval = clampedMin * 60
     r.interval        = r.pendingInterval
@@ -1146,13 +1134,7 @@
   }
 
   function loadStats() {
-    try {
-      const raw = localStorage.getItem(STATS_KEY)
-      if (!raw) return { date: todayStr(), water: 0, move: 0, eyes: 0 }
-      const s = JSON.parse(raw)
-      if (s.date !== todayStr()) return { date: todayStr(), water: 0, move: 0, eyes: 0 }
-      return s
-    } catch { return { date: todayStr(), water: 0, move: 0, eyes: 0 } }
+    return parseStats(localStorage.getItem(STATS_KEY), todayStr())
   }
 
   function saveStats(s) {
@@ -1239,8 +1221,7 @@
 
         // Auto-apply suggested interval (clamped to valid range)
         const limits      = NORMAL_LIMITS.water
-        const suggestedMin = Math.round(16 * 60 / waterGoal.sessions)
-        const clampedMin  = Math.min(Math.max(suggestedMin, limits.min), limits.max)
+        const clampedMin = calcSuggestedWaterInterval(waterGoal.sessions, limits)
         const r           = reminders.water
         r.pendingInterval = clampedMin * 60
         r.interval        = r.pendingInterval
