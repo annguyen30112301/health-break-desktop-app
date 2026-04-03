@@ -96,7 +96,7 @@ async function exchangeCodeForTokens(code, codeVerifier, clientId) {
 
 /**
  * Parses a healthbreak://oauth/callback?code=xxx&state=yyy URL.
- * @returns {{ code: string, state: string } | null}
+ * @returns {{ code: string, state: string } | { error: string } | null}
  */
 function parseCallbackUrl(urlString) {
   try {
@@ -104,7 +104,7 @@ function parseCallbackUrl(urlString) {
     const code   = url.searchParams.get('code')
     const state  = url.searchParams.get('state')
     const error  = url.searchParams.get('error')
-    if (error) throw new Error(error)
+    if (error) return { error }
     if (!code || !state) return null
     return { code, state }
   } catch {
@@ -112,10 +112,35 @@ function parseCallbackUrl(urlString) {
   }
 }
 
+// ── Refresh token exchange ────────────────────────────────────────────────────
+
+/**
+ * Uses a refresh token to obtain a new id_token + access_token from Google.
+ * Called on app launch to silently restore the session without re-prompting the user.
+ * @returns {Promise<{ access_token: string, id_token: string }>}
+ */
+async function refreshAccessToken(refreshToken, clientId) {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id:     clientId,
+      grant_type:    'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  })
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.error_description || data.error || `Token refresh failed (${response.status})`)
+  }
+  return data
+}
+
 module.exports = {
   generatePKCE,
   buildGoogleAuthUrl,
   exchangeCodeForTokens,
   parseCallbackUrl,
+  refreshAccessToken,
   REDIRECT_URI,
 }

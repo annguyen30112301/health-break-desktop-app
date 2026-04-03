@@ -72,7 +72,7 @@ function isMergeCommand(fullCmd) {
 
 // ── Kiểm tra REVIEW_REPORT.md ────────────────────────────────────────────────
 function checkReviewReport() {
-  const reportPath = path.join(process.cwd(), 'REVIEW_REPORT.md')
+  const reportPath = path.join(__dirname, '..', 'REVIEW_REPORT.md')
 
   // Không có report → chặn
   if (!fs.existsSync(reportPath)) {

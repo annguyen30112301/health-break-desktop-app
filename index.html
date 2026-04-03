@@ -1489,12 +1489,13 @@
     GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
     doc, getDoc, setDoc, serverTimestamp,
   } = require('./src/firebase.js')
-  const { generatePKCE, buildGoogleAuthUrl, exchangeCodeForTokens, parseCallbackUrl } = require('./src/auth.js')
+  const { generatePKCE, buildGoogleAuthUrl, exchangeCodeForTokens, parseCallbackUrl, refreshAccessToken } = require('./src/auth.js')
 
   const AUTH_MODE_KEY = 'healthbreak-auth-mode'  // 'offline' | 'online'
 
-  let currentUser   = null   // Firebase User object or null
-  let _pkceSession  = null   // { codeVerifier, state } for the in-flight OAuth attempt
+  let currentUser    = null   // Firebase User object or null
+  let _pkceSession   = null   // { codeVerifier, state } for the in-flight OAuth attempt
+  let _oauthTimeout  = null   // setTimeout handle to reset button if callback never arrives
 
   // ── Toast ──────────────────────────────────────────────────────────────────
   let _toastTimer = null
@@ -1582,14 +1583,23 @@
     ipcRenderer.send('open-auth-browser', authUrl)
 
     btn.textContent = locale.auth.signingInWait
+
+    // Reset button after 5 min if OAuth callback never arrives (e.g. user closed browser)
+    _oauthTimeout = setTimeout(() => {
+      _pkceSession = null
+      if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
+    }, 5 * 60 * 1000)
   }
 
   // ── OAuth callback from main process ──────────────────────────────────────
   ipcRenderer.on('oauth-callback', async (event, callbackUrl) => {
+    clearTimeout(_oauthTimeout)
+    _oauthTimeout = null
     const btn = document.getElementById('btn-auth')
     try {
       const parsed = parseCallbackUrl(callbackUrl)
       if (!parsed || !_pkceSession) throw new Error('Invalid callback')
+      if (parsed.error) throw new Error(`OAuth error: ${parsed.error}`)
       if (parsed.state !== _pkceSession.state) throw new Error('State mismatch — possible CSRF')
 
       const tokens = await exchangeCodeForTokens(
@@ -1638,8 +1648,24 @@
         _authInitialized = true
 
         if (user) {
-          // First load with an existing session — check for cloud settings
+          // First load with an existing Firebase session — check for cloud settings
           await handleFirstLoginWithUser(user, false)
+        } else {
+          // Firebase has no session — try silent restore via stored refresh token
+          try {
+            const stored = await ipcRenderer.invoke('safe-storage-get')
+            if (stored) {
+              const { refreshToken } = JSON.parse(stored)
+              if (refreshToken) {
+                const tokens = await refreshAccessToken(refreshToken, GOOGLE_CLIENT_ID)
+                const credential = GoogleAuthProvider.credential(tokens.id_token, tokens.access_token)
+                await signInWithCredential(auth, credential)
+                // onAuthStateChanged will fire again with the restored user
+              }
+            }
+          } catch (e) {
+            console.error('Silent token restore failed:', e)
+          }
         }
         return
       }
@@ -1706,12 +1732,13 @@
   }
 
   async function handleMigrationFresh() {
+    // "Start fresh" — discard local data, sync current local settings to cloud
     hideMigrationDialog()
     if (!currentUser) return
     localStorage.setItem(AUTH_MODE_KEY, 'online')
     try {
-      const cloudSettings = await loadSettingsFromFirestore(currentUser.uid)
-      if (cloudSettings) applyCloudSettings(cloudSettings)
+      await syncSettingsToFirestore(currentUser.uid)
+      showToast(locale.auth.syncOk)
     } catch (e) {
       console.error('handleMigrationFresh error:', e)
     }
@@ -1786,8 +1813,11 @@
   }
 
   // ── Apply cloud settings to the UI ────────────────────────────────────────
+  let _applyingCloudSettings = false
+
   function applyCloudSettings(s) {
     if (!s) return
+    _applyingCloudSettings = true
     ;['water', 'move', 'eyes'].forEach(key => {
       const r = reminders[key]
       if (!s[key]) return
@@ -1810,10 +1840,12 @@
     }
     applyLocale()
     saveSettings()
+    _applyingCloudSettings = false
   }
 
   // ── Auto-sync on settings changes (online mode only) ──────────────────────
   function maybeSyncSettings() {
+    if (_applyingCloudSettings) return   // skip write-back when applying inbound cloud data
     if (currentUser && localStorage.getItem(AUTH_MODE_KEY) === 'online') {
       syncSettingsToFirestore(currentUser.uid).catch(console.error)
     }

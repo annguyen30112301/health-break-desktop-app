@@ -7,8 +7,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      // Settings sub-document
-      match /settings {
+      // Settings sub-document (path: users/{uid}/settings/main)
+      match /settings/{document} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
