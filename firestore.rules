@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Settings sub-document
+      match /settings {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // History sub-collection (Sprint 3)
+      match /history/{date} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Analytics collection — read-only for users, admin writes (Sprint 3)
+    // match /analytics/{document=**} {
+    //   allow read: if request.auth != null;
+    //   allow write: if false;  // Server-side writes only
+    // }
+
+    // Feedback collection (Sprint 3)
+    // match /feedback/{docId} {
+    //   allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    //   allow read, update, delete: if false;
+    // }
+  }
+}

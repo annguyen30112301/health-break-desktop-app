@@ -157,4 +157,31 @@ module.exports = {
       ? `Drink ${Math.round(ml)}ml now! ~${remainingMl}ml left to reach your goal.`
       : `Drink ${Math.round(ml)}ml now! 🎉 You've hit your daily goal!`,
   },
+
+  auth: {
+    cardName:       'Cloud Sync',
+    cardDescOff:    'Sign in with Google to sync settings across devices',
+    cardDescOn:     (email) => `Signed in as ${email}`,
+    badgeOffline:   'Offline',
+    badgeOnline:    'Online',
+    btnSignIn:      'Sign in with Google',
+    btnSignOut:     'Sign out',
+    signingIn:      'Opening browser…',
+    signingInWait:  'Waiting for Google…',
+    signInError:    'Sign-in failed. Please try again.',
+    notConfigured:  'Cloud sync not configured. See firebase-config.example.js.',
+
+    migrationTitle: 'Sync existing data?',
+    migrationDesc:  'You have local settings. Sync them to the cloud, or start fresh?',
+    migrationSync:  '⬆ Sync to cloud',
+    migrationFresh: 'Start fresh',
+
+    restoreTitle:   'Settings found in cloud',
+    restoreDesc:    'Would you like to restore your settings from the cloud?',
+    restoreYes:     '⬇ Restore settings',
+    restoreSkip:    'Keep current settings',
+
+    syncOk:         'Settings synced ✓',
+    syncError:      'Sync error — changes saved locally',
+  },
 };

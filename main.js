@@ -1,9 +1,21 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, shell } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, shell, safeStorage } = require('electron')
 const path = require('path')
 const os   = require('os')
 const fs   = require('fs')
 
 app.setName('HealthBreak')
+
+// Register custom URI scheme for Google OAuth callback BEFORE app is ready
+// healthbreak://oauth/callback?code=xxx&state=yyy
+const PROTOCOL = 'healthbreak'
+if (process.defaultApp) {
+  // Running via `electron .` — register for the current executable
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient(PROTOCOL)
+}
 
 // Default locale — renderer sends 'set-language' on load to sync
 let currentLocale = require('./locales/en.js')
@@ -14,6 +26,42 @@ let popupWindow = null
 let popupQueue = []   // hàng đợi các popup chưa hiển thị
 let isShowingPopup = false
 const lastSkipped = {}  // tracks whether the last action per key was a skip
+
+// ── OAuth callback forwarding ─────────────────────────────────────────────────
+// When the OS opens the app with a healthbreak:// URL, forward it to the renderer.
+function handleOAuthCallback(url) {
+  if (!url || !url.startsWith(`${PROTOCOL}://`)) return
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (!mainWindow.isVisible()) mainWindow.show()
+    mainWindow.focus()
+    mainWindow.webContents.send('oauth-callback', url)
+  }
+}
+
+// macOS: app re-activated with the URL
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleOAuthCallback(url)
+})
+
+// Windows / Linux: second instance launched with the URL in argv
+app.on('second-instance', (event, argv) => {
+  const url = argv.find(arg => arg.startsWith(`${PROTOCOL}://`))
+  if (url) handleOAuthCallback(url)
+  // Bring main window to foreground
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  }
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Ensure only one instance runs (required for second-instance event on Windows)
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -204,9 +252,56 @@ ipcMain.on('set-language', (event, lang) => {
   updateTrayMenu()
 })
 
+// ── OAuth: open system browser with auth URL ──────────────────────────────────
+ipcMain.on('open-auth-browser', (event, authUrl) => {
+  shell.openExternal(authUrl)
+})
+
+// ── safeStorage: encrypted token persistence ──────────────────────────────────
+// Tokens are stored in: <userData>/healthbreak-token.enc
+// safeStorage uses OS-level encryption (Keychain / DPAPI / libsecret).
+
+const TOKEN_PATH = path.join(app.getPath('userData'), 'healthbreak-token.enc')
+
+ipcMain.handle('safe-storage-get', () => {
+  try {
+    if (!fs.existsSync(TOKEN_PATH)) return null
+    if (!safeStorage.isEncryptionAvailable()) return null
+    const encrypted = fs.readFileSync(TOKEN_PATH)
+    return safeStorage.decryptString(encrypted)
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('safe-storage-set', (event, plaintext) => {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return false
+    const encrypted = safeStorage.encryptString(plaintext)
+    fs.writeFileSync(TOKEN_PATH, encrypted)
+    return true
+  } catch {
+    return false
+  }
+})
+
+ipcMain.handle('safe-storage-delete', () => {
+  try {
+    if (fs.existsSync(TOKEN_PATH)) fs.unlinkSync(TOKEN_PATH)
+    return true
+  } catch {
+    return false
+  }
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.whenReady().then(() => {
   createWindow()
   createTray()
+
+  // Check if launched via protocol URL (Windows — URL may be in argv)
+  const protoUrl = process.argv.find(arg => arg.startsWith(`${PROTOCOL}://`))
+  if (protoUrl) handleOAuthCallback(protoUrl)
 })
 
 app.on('window-all-closed', (e) => e.preventDefault())

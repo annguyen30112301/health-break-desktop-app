@@ -157,4 +157,31 @@ module.exports = {
       ? `Uống ${Math.round(ml)}ml ngay! Còn ~${remainingMl}ml để đạt mục tiêu.`
       : `Uống ${Math.round(ml)}ml ngay! 🎉 Bạn đã đạt mục tiêu hôm nay!`,
   },
+
+  auth: {
+    cardName:       'Đồng bộ đám mây',
+    cardDescOff:    'Đăng nhập Google để đồng bộ cài đặt giữa các thiết bị',
+    cardDescOn:     (email) => `Đã đăng nhập: ${email}`,
+    badgeOffline:   'Ngoại tuyến',
+    badgeOnline:    'Trực tuyến',
+    btnSignIn:      'Đăng nhập với Google',
+    btnSignOut:     'Đăng xuất',
+    signingIn:      'Đang mở trình duyệt…',
+    signingInWait:  'Đang chờ đăng nhập Google…',
+    signInError:    'Đăng nhập thất bại. Vui lòng thử lại.',
+    notConfigured:  'Chưa cấu hình đồng bộ. Xem firebase-config.example.js.',
+
+    migrationTitle: 'Đồng bộ dữ liệu hiện có?',
+    migrationDesc:  'Bạn có cài đặt đã lưu trên máy. Đồng bộ lên đám mây hay bắt đầu mới?',
+    migrationSync:  '⬆ Đồng bộ lên đám mây',
+    migrationFresh: 'Bắt đầu mới',
+
+    restoreTitle:   'Tìm thấy cài đặt trên đám mây',
+    restoreDesc:    'Bạn có muốn khôi phục cài đặt từ đám mây không?',
+    restoreYes:     '⬇ Khôi phục cài đặt',
+    restoreSkip:    'Giữ cài đặt hiện tại',
+
+    syncOk:         'Đã đồng bộ ✓',
+    syncError:      'Lỗi đồng bộ — đã lưu cục bộ',
+  },
 };

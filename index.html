@@ -438,6 +438,121 @@
       transition: color 0.15s;
     }
     .btn-onboard-skip:hover { color: #888; }
+
+    /* ── Auth / Cloud Sync card ──────────────────────────────────────── */
+    .auth-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .auth-badge.offline { background: #f5f5f5; color: #aaa; border: 1px solid #e0e0e0; }
+    .auth-badge.online  { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+
+    .btn-auth {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-auth:hover { border-color: #4285F4; color: #4285F4; background: #f0f4ff; }
+    .btn-auth.signout:hover { border-color: #e53935; color: #e53935; background: #fff5f5; }
+    .btn-auth:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Toast notification ──────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: #323232;
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px 18px;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+      z-index: 500;
+      white-space: nowrap;
+    }
+    #toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Migration / Restore dialog ──────────────────────────────────── */
+    .dialog-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    .dialog-backdrop.open { display: flex; }
+    .dialog {
+      background: white;
+      border-radius: 14px;
+      width: 340px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+      animation: slideUp 0.2s ease;
+    }
+    .dialog-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .dialog-desc {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+    .dialog-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-dialog-primary {
+      width: 100%;
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-dialog-primary:hover { background: #43A047; }
+    .btn-dialog-secondary {
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-dialog-secondary:hover { border-color: #bbb; color: #333; }
   </style>
 </head>
 <body>
@@ -570,7 +685,45 @@
   <div class="card-desc" id="autolaunch-desc"></div>
 </div>
 
+<!-- ── Cloud Sync ─────────────────────────────────────────────────────────── -->
+<div class="card" id="card-auth" style="margin-bottom: 12px;">
+  <div class="card-top">
+    <div class="card-icon">☁️</div>
+    <div class="card-name" id="auth-card-name"></div>
+    <div class="auth-badge offline" id="auth-badge"></div>
+    <button class="btn-auth" id="btn-auth" onclick="handleAuthClick()"></button>
+  </div>
+  <div class="card-desc" id="auth-card-desc"></div>
+</div>
+
 <div class="status-bar" id="status"></div>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ── Migration dialog ───────────────────────────────────────────────────── -->
+<div class="dialog-backdrop" id="migration-backdrop">
+  <div class="dialog">
+    <div class="dialog-title" id="migration-title"></div>
+    <div class="dialog-desc"  id="migration-desc"></div>
+    <div class="dialog-actions">
+      <button class="btn-dialog-primary"   id="btn-migration-sync"  onclick="handleMigrationSync()"></button>
+      <button class="btn-dialog-secondary" id="btn-migration-fresh" onclick="handleMigrationFresh()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Restore dialog ─────────────────────────────────────────────────────── -->
+<div class="dialog-backdrop" id="restore-backdrop">
+  <div class="dialog">
+    <div class="dialog-title" id="restore-title"></div>
+    <div class="dialog-desc"  id="restore-desc"></div>
+    <div class="dialog-actions">
+      <button class="btn-dialog-primary"   id="btn-restore-yes"  onclick="handleRestoreYes()"></button>
+      <button class="btn-dialog-secondary" id="btn-restore-skip" onclick="handleRestoreSkip()"></button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Info modal ────────────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="modal-backdrop" onclick="onBackdropClick(event)">
@@ -662,6 +815,7 @@
     localStorage.setItem(LANG_KEY, lang)
     applyLocale()
     ipcRenderer.send('set-language', lang)
+    if (typeof maybeSyncSettings === 'function') maybeSyncSettings()
   }
 
   function applyLocale() {
@@ -722,6 +876,9 @@
     // Update onboarding texts if overlay is visible
     const _overlay = document.getElementById('onboarding-overlay')
     if (_overlay && _overlay.style.display !== 'none') applyOnboardingLocale()
+
+    // Update auth card + dialog strings
+    if (typeof applyAuthLocale === 'function') applyAuthLocale()
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -1000,6 +1157,8 @@
       settings[key] = { interval: reminders[key].interval, active: reminders[key].active }
     })
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    // Sync to Firestore if signed in (defined after auth section initializes)
+    if (typeof maybeSyncSettings === 'function') maybeSyncSettings()
   }
 
   function loadSettings() {
@@ -1324,12 +1483,351 @@
   }
   // ────────────────────────────────────────────────────────────────────────
 
+  // ── Auth / Cloud Sync ─────────────────────────────────────────────────────
+  const {
+    auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID,
+    GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
+    doc, getDoc, setDoc, serverTimestamp,
+  } = require('./src/firebase.js')
+  const { generatePKCE, buildGoogleAuthUrl, exchangeCodeForTokens, parseCallbackUrl } = require('./src/auth.js')
+
+  const AUTH_MODE_KEY = 'healthbreak-auth-mode'  // 'offline' | 'online'
+
+  let currentUser   = null   // Firebase User object or null
+  let _pkceSession  = null   // { codeVerifier, state } for the in-flight OAuth attempt
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  let _toastTimer = null
+  function showToast(msg, durationMs = 2500) {
+    const el = document.getElementById('toast')
+    el.textContent = msg
+    el.classList.add('visible')
+    clearTimeout(_toastTimer)
+    _toastTimer = setTimeout(() => el.classList.remove('visible'), durationMs)
+  }
+
+  // ── Auth UI render ─────────────────────────────────────────────────────────
+  function renderAuthUI() {
+    const loc     = locale.auth
+    const nameEl  = document.getElementById('auth-card-name')
+    const descEl  = document.getElementById('auth-card-desc')
+    const badgeEl = document.getElementById('auth-badge')
+    const btnEl   = document.getElementById('btn-auth')
+
+    nameEl.textContent = loc.cardName
+
+    if (!IS_CONFIGURED) {
+      badgeEl.textContent = loc.badgeOffline
+      badgeEl.className   = 'auth-badge offline'
+      descEl.textContent  = loc.notConfigured
+      btnEl.style.display = 'none'
+      return
+    }
+
+    if (currentUser) {
+      badgeEl.textContent = loc.badgeOnline
+      badgeEl.className   = 'auth-badge online'
+      descEl.textContent  = loc.cardDescOn(currentUser.email)
+      btnEl.textContent   = loc.btnSignOut
+      btnEl.className     = 'btn-auth signout'
+      btnEl.disabled      = false
+    } else {
+      badgeEl.textContent = loc.badgeOffline
+      badgeEl.className   = 'auth-badge offline'
+      descEl.textContent  = loc.cardDescOff
+      btnEl.textContent   = loc.btnSignIn
+      btnEl.className     = 'btn-auth'
+      btnEl.disabled      = false
+    }
+  }
+
+  // Apply auth locale strings on language switch
+  function applyAuthLocale() {
+    renderAuthUI()
+    const loc = locale.auth
+    document.getElementById('migration-title').textContent  = loc.migrationTitle
+    document.getElementById('migration-desc').textContent   = loc.migrationDesc
+    document.getElementById('btn-migration-sync').textContent  = loc.migrationSync
+    document.getElementById('btn-migration-fresh').textContent = loc.migrationFresh
+    document.getElementById('restore-title').textContent    = loc.restoreTitle
+    document.getElementById('restore-desc').textContent     = loc.restoreDesc
+    document.getElementById('btn-restore-yes').textContent  = loc.restoreYes
+    document.getElementById('btn-restore-skip').textContent = loc.restoreSkip
+  }
+
+  // ── Sign-in flow ───────────────────────────────────────────────────────────
+  async function handleAuthClick() {
+    if (!IS_CONFIGURED) return
+    const btn = document.getElementById('btn-auth')
+
+    if (currentUser) {
+      // Sign out
+      try {
+        await signOut(auth)
+        await ipcRenderer.invoke('safe-storage-delete')
+        localStorage.removeItem(AUTH_MODE_KEY)
+      } catch (e) {
+        console.error('Sign-out error:', e)
+      }
+      return
+    }
+
+    // Start sign-in
+    btn.disabled    = true
+    btn.textContent = locale.auth.signingIn
+
+    const pkce = generatePKCE()
+    _pkceSession   = pkce
+    const authUrl  = buildGoogleAuthUrl(GOOGLE_CLIENT_ID, pkce.codeChallenge, pkce.state)
+    ipcRenderer.send('open-auth-browser', authUrl)
+
+    btn.textContent = locale.auth.signingInWait
+  }
+
+  // ── OAuth callback from main process ──────────────────────────────────────
+  ipcRenderer.on('oauth-callback', async (event, callbackUrl) => {
+    const btn = document.getElementById('btn-auth')
+    try {
+      const parsed = parseCallbackUrl(callbackUrl)
+      if (!parsed || !_pkceSession) throw new Error('Invalid callback')
+      if (parsed.state !== _pkceSession.state) throw new Error('State mismatch — possible CSRF')
+
+      const tokens = await exchangeCodeForTokens(
+        parsed.code,
+        _pkceSession.codeVerifier,
+        GOOGLE_CLIENT_ID
+      )
+      _pkceSession = null
+
+      // Sign in to Firebase with the Google credential
+      const credential = GoogleAuthProvider.credential(tokens.id_token, tokens.access_token)
+      await signInWithCredential(auth, credential)
+
+      // Persist refresh token encrypted
+      if (tokens.refresh_token) {
+        await ipcRenderer.invoke('safe-storage-set', JSON.stringify({
+          refreshToken: tokens.refresh_token,
+          uid: auth.currentUser?.uid,
+        }))
+      }
+
+    } catch (e) {
+      console.error('OAuth callback error:', e)
+      _pkceSession = null
+      showToast(locale.auth.signInError, 4000)
+      if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
+    }
+  })
+
+  // ── Firebase auth state listener ───────────────────────────────────────────
+  let _authInitialized = false
+
+  function initAuth() {
+    if (!IS_CONFIGURED || !auth) {
+      renderAuthUI()
+      return
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      const wasNull = !currentUser
+      currentUser = user
+
+      renderAuthUI()
+
+      if (!_authInitialized) {
+        _authInitialized = true
+
+        if (user) {
+          // First load with an existing session — check for cloud settings
+          await handleFirstLoginWithUser(user, false)
+        }
+        return
+      }
+
+      if (user && wasNull) {
+        // Fresh login just completed
+        await handleFirstLoginWithUser(user, true)
+      } else if (!user && !wasNull) {
+        // Signed out
+        localStorage.removeItem(AUTH_MODE_KEY)
+      }
+    })
+  }
+
+  // ── First login / restore logic ────────────────────────────────────────────
+  async function handleFirstLoginWithUser(user, isFreshLogin) {
+    try {
+      const cloudSettings = await loadSettingsFromFirestore(user.uid)
+      const hasLocal = !!localStorage.getItem(STORAGE_KEY)
+
+      if (isFreshLogin) {
+        if (hasLocal && !cloudSettings) {
+          // Local data, no cloud data → offer to sync
+          showMigrationDialog()
+        } else if (cloudSettings) {
+          if (hasLocal) {
+            // Both local and cloud data → let user choose
+            showMigrationDialog()
+          } else {
+            // Only cloud data → offer to restore
+            showRestoreDialog()
+          }
+        } else {
+          // No data anywhere → just switch to online mode and save current settings
+          localStorage.setItem(AUTH_MODE_KEY, 'online')
+          await syncSettingsToFirestore(user.uid)
+        }
+      } else {
+        // Returning session — silently restore if no local settings
+        if (!hasLocal && cloudSettings) {
+          applyCloudSettings(cloudSettings)
+        }
+        localStorage.setItem(AUTH_MODE_KEY, 'online')
+      }
+    } catch (e) {
+      console.error('handleFirstLoginWithUser error:', e)
+    }
+  }
+
+  // ── Migration dialog ───────────────────────────────────────────────────────
+  function showMigrationDialog() {
+    document.getElementById('migration-backdrop').classList.add('open')
+  }
+  function hideMigrationDialog() {
+    document.getElementById('migration-backdrop').classList.remove('open')
+  }
+
+  async function handleMigrationSync() {
+    hideMigrationDialog()
+    if (!currentUser) return
+    localStorage.setItem(AUTH_MODE_KEY, 'online')
+    await syncSettingsToFirestore(currentUser.uid)
+    showToast(locale.auth.syncOk)
+  }
+
+  async function handleMigrationFresh() {
+    hideMigrationDialog()
+    if (!currentUser) return
+    localStorage.setItem(AUTH_MODE_KEY, 'online')
+    try {
+      const cloudSettings = await loadSettingsFromFirestore(currentUser.uid)
+      if (cloudSettings) applyCloudSettings(cloudSettings)
+    } catch (e) {
+      console.error('handleMigrationFresh error:', e)
+    }
+  }
+
+  // ── Restore dialog ─────────────────────────────────────────────────────────
+  function showRestoreDialog() {
+    document.getElementById('restore-backdrop').classList.add('open')
+  }
+  function hideRestoreDialog() {
+    document.getElementById('restore-backdrop').classList.remove('open')
+  }
+
+  async function handleRestoreYes() {
+    hideRestoreDialog()
+    if (!currentUser) return
+    localStorage.setItem(AUTH_MODE_KEY, 'online')
+    try {
+      const cloudSettings = await loadSettingsFromFirestore(currentUser.uid)
+      if (cloudSettings) {
+        applyCloudSettings(cloudSettings)
+        showToast(locale.auth.syncOk)
+      }
+    } catch (e) {
+      console.error('handleRestoreYes error:', e)
+    }
+  }
+
+  function handleRestoreSkip() {
+    hideRestoreDialog()
+    if (!currentUser) return
+    localStorage.setItem(AUTH_MODE_KEY, 'online')
+    syncSettingsToFirestore(currentUser.uid).catch(console.error)
+  }
+
+  // ── Firestore: settings schema ─────────────────────────────────────────────
+  // users/{uid}/settings  →  { water, move, eyes, lang, waterGoal, updatedAt }
+  //   each of water/move/eyes: { interval: minutes, active: bool }
+
+  function buildFirestoreSettings() {
+    return {
+      water:      { interval: Math.round(reminders.water.interval / 60), active: reminders.water.active },
+      move:       { interval: Math.round(reminders.move.interval  / 60), active: reminders.move.active  },
+      eyes:       { interval: Math.round(reminders.eyes.interval  / 60), active: reminders.eyes.active  },
+      lang:       currentLang,
+      waterGoal:  waterGoal || null,
+      updatedAt:  serverTimestamp(),
+    }
+  }
+
+  async function syncSettingsToFirestore(uid) {
+    if (!db || !uid) return
+    try {
+      const ref = doc(db, 'users', uid, 'settings', 'main')
+      await setDoc(ref, buildFirestoreSettings(), { merge: true })
+    } catch (e) {
+      console.warn('Firestore sync error:', e)
+      showToast(locale.auth.syncError, 3500)
+    }
+  }
+
+  async function loadSettingsFromFirestore(uid) {
+    if (!db || !uid) return null
+    try {
+      const ref  = doc(db, 'users', uid, 'settings', 'main')
+      const snap = await getDoc(ref)
+      return snap.exists() ? snap.data() : null
+    } catch (e) {
+      console.warn('Firestore load error:', e)
+      return null
+    }
+  }
+
+  // ── Apply cloud settings to the UI ────────────────────────────────────────
+  function applyCloudSettings(s) {
+    if (!s) return
+    ;['water', 'move', 'eyes'].forEach(key => {
+      const r = reminders[key]
+      if (!s[key]) return
+      const limits  = NORMAL_LIMITS[key]
+      const minutes = Math.max(limits.min, Math.min(limits.max, s[key].interval || limits.default))
+      r.interval        = minutes * 60
+      r.remaining       = r.interval
+      r.pendingInterval = r.interval
+      r.active          = s[key].active !== false
+      document.getElementById(`slider-${key}`).value         = minutes
+      document.getElementById(`timer-${key}`).textContent    = formatTime(r.interval)
+      document.getElementById(`toggle-${key}`).classList.toggle('off', !r.active)
+      if (r.active) startTimer(key)
+      else stopTimer(key)
+    })
+    if (s.lang && s.lang !== currentLang) setLanguage(s.lang)
+    if (s.waterGoal) {
+      waterGoal = s.waterGoal
+      persistWaterGoal()
+    }
+    applyLocale()
+    saveSettings()
+  }
+
+  // ── Auto-sync on settings changes (online mode only) ──────────────────────
+  function maybeSyncSettings() {
+    if (currentUser && localStorage.getItem(AUTH_MODE_KEY) === 'online') {
+      syncSettingsToFirestore(currentUser.uid).catch(console.error)
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   // ── Bootstrap ─────────────────────────────────────────────────────────────
   loadSettings()     // restore intervals + toggle states from localStorage
   loadWaterGoal()    // restore saved water goal (must run before applyLocale/initStats)
   applyLocale()      // apply all locale strings (runs after loadSettings so intervals are correct)
+  applyAuthLocale()  // auth card + dialog strings
   initOnboarding()   // show onboarding overlay if first run
   initAutoLaunch()   // async — updates auto-launch toggle
+  initAuth()         // start Firebase auth state listener
   initStatsDisplay() // render today's confirmed counts on cards
   Object.keys(reminders).forEach(key => { if (reminders[key].active) startTimer(key) })
   ipcRenderer.send('set-language', currentLang)  // sync tray menu with saved language

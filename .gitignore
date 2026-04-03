@@ -17,3 +17,10 @@ npm-debug.log*
 
 # Local env
 .env
+
+# Firebase config (contains API keys — never commit)
+src/firebase-config.js
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/

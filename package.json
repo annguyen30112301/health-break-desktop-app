@@ -47,6 +47,12 @@
       "locales/**",
       "src/**"
     ],
+    "protocols": [
+      {
+        "name": "HealthBreak OAuth",
+        "schemes": ["healthbreak"]
+      }
+    ],
     "win": {
       "target": [
         {
@@ -81,5 +87,8 @@
     "dmg": {
       "title": "HealthBreak ${version}"
     }
+  },
+  "dependencies": {
+    "firebase": "^12.11.0"
   }
 }
