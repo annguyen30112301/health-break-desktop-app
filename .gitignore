@@ -21,6 +21,9 @@ npm-debug.log*
 # Firebase config (contains API keys — never commit)
 src/firebase-config.js
 
+# Code review report (local working file — not committed)
+REVIEW_REPORT.md
+
 # Claude Code local settings
 .claude/settings.local.json
 .claude/worktrees/
