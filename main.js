@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen } = require('electron')
 const path = require('path')
 
+app.setName('HealthBreak')
+
 // Default locale — renderer sends 'set-language' on load to sync
 let currentLocale = require('./locales/en.js')
 
@@ -69,7 +71,7 @@ function setAutoLaunch(enable) {
 }
 
 function getAutoLaunch() {
-  return app.getLoginItemSettings().openAtLogin
+  return app.getLoginItemSettings({ args: ['--hidden'] }).openAtLogin
 }
 
 function destroyPopup() {

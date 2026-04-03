@@ -82,7 +82,7 @@ module.exports = {
   minFull:  'phút',  // slider value display  e.g. "30 phút"
 
   autoLaunch: {
-    name: 'Tự khởi động cùng Windows',
+    name: 'Tự khởi động cùng hệ thống',
     desc: 'Chạy nền khi đăng nhập máy tính',
   },
 

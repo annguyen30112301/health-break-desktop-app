@@ -82,7 +82,7 @@ module.exports = {
   minFull:  'min',  // slider value display  e.g. "30 min"
 
   autoLaunch: {
-    name: 'Launch with Windows',
+    name: 'Launch at system startup',
     desc: 'Run in background on login',
   },
 
