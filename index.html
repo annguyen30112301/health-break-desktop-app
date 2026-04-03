@@ -1487,11 +1487,19 @@
   // ────────────────────────────────────────────────────────────────────────
 
   // ── Auth / Cloud Sync ─────────────────────────────────────────────────────
-  const {
-    auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID,
-    GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
-    doc, getDoc, setDoc, serverTimestamp,
-  } = require('./src/firebase.js')
+  // Wrapped in try-catch so a firebase load failure never breaks the rest of the app
+  let auth = null, db = null, IS_CONFIGURED = false, GOOGLE_CLIENT_ID = ''
+  let GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged
+  let doc, getDoc, setDoc, serverTimestamp
+  try {
+    ;({
+      auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID,
+      GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
+      doc, getDoc, setDoc, serverTimestamp,
+    } = require('./src/firebase.js'))
+  } catch (e) {
+    console.error('Firebase failed to load:', e)
+  }
   const { generatePKCE, buildGoogleAuthUrl, exchangeCodeForTokens, parseCallbackUrl, refreshAccessToken } = require('./src/auth.js')
 
   const AUTH_MODE_KEY = 'healthbreak-auth-mode'  // 'offline' | 'online'
