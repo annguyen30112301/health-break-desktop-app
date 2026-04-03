@@ -23,6 +23,9 @@
   "build": {
     "appId": "com.healthbreak.app",
     "productName": "HealthBreak",
+    "extraMetadata": {
+      "description": "HealthBreak"
+    },
     "directories": {
       "output": "dist"
     },
