@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are a progress tracker for the HealthBreak project. Your job is to update ROADMAP.md based on recent git commits.\n\nProject root: C:/Users/anngu/Desktop/Projects/AI/HealthBreak\n\nSteps:\n1. Run `git -C C:/Users/anngu/Desktop/Projects/AI/HealthBreak log --oneline -10` to get recent commits.\n2. Read `C:/Users/anngu/Desktop/Projects/AI/HealthBreak/ROADMAP.md`.\n3. For each commit message, check if it relates to any task that has `[ ]` in ROADMAP.md.\n   Match by keywords. Examples:\n   - commit contains 'stats schema' or 'skips' or 'history' → mark `stats-schema` and/or `stats-migration`\n   - commit contains 'dashboard' or 'open-dashboard' or 'shell.openExternal' → mark `ipc-dashboard`\n   - commit contains 'chart' or 'SVG' → mark relevant chart tasks\n   - commit contains 'firebase' or 'firestore' → mark `firebase-setup`\n   - commit contains 'oauth' or 'google' or 'sign' → mark `oauth-flow`\n   - commit contains 'safeStorage' or 'token' → mark `token-storage`\n   - commit contains 'feedback' → mark `feedback-ui` and/or `feedback-firestore`\n   - commit contains 'account' or 'delete' → mark `account-ui` and/or `account-delete`\n   - commit contains 'localize' or 'i18n' or 'locale' and 'dashboard' → mark `dashboard-i18n`\n   Use your judgment for other matches.\n4. For each matched task: change `[ ]` to `[x]`.\n5. Move completed tasks to the 'Completed' table at the bottom with: task ID, short description, commit hash (first 7 chars), and today's date (YYYY-MM-DD).\n6. Recalculate 'Overall progress: X / 19 tasks (Y%)' and per-sprint 'Progress: X / N tasks' by counting [x] items.\n7. Update 'Last updated' to today's date.\n8. Only write the file if at least one task changed. If nothing changed, do nothing.\n\nToday's date: use the result of `date /t` or check the git log timestamp.",
+            "timeout": 120,
+            "statusMessage": "Đang cập nhật ROADMAP.md...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
