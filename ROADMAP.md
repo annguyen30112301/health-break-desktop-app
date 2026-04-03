@@ -3,14 +3,14 @@
 > Cập nhật tự động sau mỗi commit. Xem chi tiết từng tính năng trong `tests/TEST-PLAN.md` và PRD tương ứng.
 
 **Last updated:** 2026-04-03
-**Overall progress:** 19 / 27 tasks (70%)
+**Overall progress:** 11 / 27 tasks (41%)
 
 ---
 
 ## Legend
-- `[x]` Hoàn thành
+- `[x]` Hoàn thành (merged vào main + issue closed)
+- `[~]` Code viết xong, đang review / chờ merge
 - `[ ]` Chưa làm
-- `[~]` Đang thực hiện
 
 ---
 
@@ -41,19 +41,19 @@
 ## Sprint 2 — Google SSO & Firebase (PRD 2)
 > Login Google optional, Online/Offline mode, sync settings lên Firestore.
 
-**Progress:** 8 / 8 tasks ✅
+**Progress:** 0 / 8 tasks (PR #30 đang mở, chưa merge, chưa test thật)
 
 ### Week 3 — Firebase foundation & Auth
-- [x] `firebase-setup` — Tạo Firebase project, bật Auth (Google provider), Firestore rules draft
-- [x] `oauth-flow` — Electron OAuth: `app.setAsDefaultProtocolClient('healthbreak')`, bắt `open-url`, IPC token to renderer
-- [x] `auth-ui` — UI: nút "Đăng nhập với Google", badge Offline / Online mode trong cửa sổ chính
+- [~] `firebase-setup` — Tạo Firebase project, bật Auth (Google provider), Firestore rules draft
+- [~] `oauth-flow` — Electron OAuth: `app.setAsDefaultProtocolClient('healthbreak')`, bắt `open-url`, IPC token to renderer
+- [~] `auth-ui` — UI: nút "Đăng nhập với Google", badge Offline / Online mode trong cửa sổ chính
 
 ### Week 4 — Sync & Migration
-- [x] `token-storage` — Lưu token bằng `safeStorage.encryptString` trong `userData`, không dùng localStorage
-- [x] `mode-switch` — Online/Offline mode switch: sau login, renderer đọc/ghi Firestore, không dùng localStorage cho data
-- [x] `settings-sync` — Sync settings lên `users/{uid}/settings` khi thay đổi (local-first, retry khi offline)
-- [x] `settings-restore` — Load settings từ Firestore khi login trên máy mới
-- [x] `migration-dialog` — Dialog khi login lần đầu có local data: "Đồng bộ" hoặc "Bắt đầu mới"
+- [~] `token-storage` — Lưu token bằng `safeStorage.encryptString` trong `userData`, không dùng localStorage
+- [~] `mode-switch` — Online/Offline mode switch: sau login, renderer đọc/ghi Firestore, không dùng localStorage cho data
+- [~] `settings-sync` — Sync settings lên `users/{uid}/settings` khi thay đổi (local-first, retry khi offline)
+- [~] `settings-restore` — Load settings từ Firestore khi login trên máy mới
+- [~] `migration-dialog` — Dialog khi login lần đầu có local data: "Đồng bộ" hoặc "Bắt đầu mới"
 
 ---
 
@@ -77,7 +77,7 @@
 ---
 
 ## Completed ✅
-_Các task đã hoàn thành sẽ được chuyển vào đây kèm commit hash._
+_Task được đưa vào đây chỉ khi: code merged vào main + issue closed._
 
 | Task | Mô tả | Commit | Ngày |
 |------|--------|--------|------|
@@ -92,11 +92,3 @@ _Các task đã hoàn thành sẽ được chuyển vào đây kèm commit hash.
 | `chart-skiprate` | Section skip rate riêng từng loại | 8510745 | 2026-04-03 |
 | `chart-toggle` | Toggle 7 ngày / 30 ngày | 8510745 | 2026-04-03 |
 | `dashboard-i18n` | Localization EN/VI toàn bộ text | 8510745 | 2026-04-03 |
-| `firebase-setup` | Firebase SDK + Firestore rules + config template | 0d4694e | 2026-04-03 |
-| `oauth-flow` | PKCE OAuth flow, protocol handler, IPC forwarding | 0d4694e | 2026-04-03 |
-| `auth-ui` | Cloud Sync card, Offline/Online badge, toast | 0d4694e | 2026-04-03 |
-| `token-storage` | safeStorage DPAPI/Keychain encrypted token | 0d4694e | 2026-04-03 |
-| `mode-switch` | Online/Offline mode switch, localStorage vs Firestore | 0d4694e | 2026-04-03 |
-| `settings-sync` | Sync settings to users/{uid}/settings/main on change | 0d4694e | 2026-04-03 |
-| `settings-restore` | Load + apply cloud settings on new machine login | 0d4694e | 2026-04-03 |
-| `migration-dialog` | Migration + Restore dialogs for data conflict resolution | 0d4694e | 2026-04-03 |
