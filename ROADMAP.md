@@ -3,7 +3,7 @@
 > Cập nhật tự động sau mỗi commit. Xem chi tiết từng tính năng trong `tests/TEST-PLAN.md` và PRD tương ứng.
 
 **Last updated:** 2026-04-04
-**Overall progress:** 19 / 27 tasks (70%)
+**Overall progress:** 27 / 27 tasks (100%) ✅
 
 ---
 
@@ -60,19 +60,19 @@
 ## Sprint 3 — Community & Admin (PRD 2 cont.)
 > Stats sync, feedback, quản lý tài khoản, analytics cho admin.
 
-**Progress:** 0 / 8 tasks
+**Progress:** 8 / 8 tasks ✅
 
 ### Week 5 — Data sync & Feedback
-- [ ] `stats-sync` — Ghi `users/{uid}/history/{date}` lên Firestore sau mỗi confirm/skip
-- [ ] `analytics-agg` — Daily aggregates: `FieldValue.increment` cho `analytics/daily/{date}` (dau, confirms, skips)
-- [ ] `feedback-ui` — In-app feedback form (Online mode only): input 1–500 ký tự, nút Gửi
-- [ ] `feedback-firestore` — Ghi feedback lên `feedback/{autoId}`: uid, text, appVersion, lang, platform, createdAt
+- [x] `stats-sync` — Ghi `users/{uid}/history/{date}` lên Firestore sau mỗi confirm/skip
+- [x] `analytics-agg` — Daily aggregates: `FieldValue.increment` cho `analytics/daily/{date}` (dau, confirms, skips)
+- [x] `feedback-ui` — In-app feedback form (Online mode only): input 1–500 ký tự, nút Gửi
+- [x] `feedback-firestore` — Ghi feedback lên `feedback/{autoId}`: uid, text, appVersion, lang, platform, createdAt
 
 ### Week 6 — Account management & Polish
-- [ ] `account-ui` — Account settings: avatar, email, ngày tạo, nút "Xóa tài khoản"
-- [ ] `account-delete` — Xóa toàn bộ Firestore docs + Firebase Auth account, chuyển về Offline mode
-- [ ] `privacy-notice` — Privacy notice trong onboarding khi chọn Online mode
-- [ ] `online-polish` — UX polish: avatar header, mode indicator, toast sync status
+- [x] `account-ui` — Account settings: avatar, email, ngày tạo, nút "Xóa tài khoản"
+- [x] `account-delete` — Xóa toàn bộ Firestore docs + Firebase Auth account, chuyển về Offline mode
+- [x] `privacy-notice` — Privacy notice trong onboarding khi chọn Online mode
+- [x] `online-polish` — UX polish: avatar header, mode indicator, toast sync status
 
 ---
 
@@ -92,3 +92,19 @@ _Task được đưa vào đây chỉ khi: code merged vào main + issue closed.
 | `chart-skiprate` | Section skip rate riêng từng loại | 8510745 | 2026-04-03 |
 | `chart-toggle` | Toggle 7 ngày / 30 ngày | 8510745 | 2026-04-03 |
 | `dashboard-i18n` | Localization EN/VI toàn bộ text | 8510745 | 2026-04-03 |
+| `firebase-setup` | Tạo Firebase project + Firestore rules + Auth | 6749140 | 2026-04-04 |
+| `oauth-flow` | Electron OAuth: loopback redirect 127.0.0.1 | 4b97be4 | 2026-04-04 |
+| `auth-ui` | UI nút đăng nhập + badge Offline/Online mode | 6749140 | 2026-04-04 |
+| `token-storage` | Lưu token bằng safeStorage.encryptString | 6749140 | 2026-04-04 |
+| `mode-switch` | Online/Offline mode switch logic | 6749140 | 2026-04-04 |
+| `settings-sync` | Sync settings lên users/{uid}/settings | 6749140 | 2026-04-04 |
+| `settings-restore` | Load settings từ Firestore khi login máy mới | 6749140 | 2026-04-04 |
+| `migration-dialog` | Dialog sync local data khi login lần đầu | 6749140 | 2026-04-04 |
+| `stats-sync` | Ghi users/{uid}/history/{date} sau mỗi confirm/skip | 803d561 | 2026-04-04 |
+| `analytics-agg` | Daily aggregates với FieldValue.increment | 803d561 | 2026-04-04 |
+| `feedback-ui` | In-app feedback form (Online mode only) | 803d561 | 2026-04-04 |
+| `feedback-firestore` | Ghi feedback lên Firestore collection | 803d561 | 2026-04-04 |
+| `account-ui` | Account settings: avatar, email, ngày tạo | d76ba86 | 2026-04-04 |
+| `account-delete` | Xóa Firestore docs + Firebase Auth account | d76ba86 | 2026-04-04 |
+| `privacy-notice` | Privacy notice trong onboarding bước 3 | d76ba86 | 2026-04-04 |
+| `online-polish` | UX polish: avatar header, mode indicator | d76ba86 | 2026-04-04 |
