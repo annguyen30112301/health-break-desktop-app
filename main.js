@@ -299,6 +299,13 @@ ipcMain.handle('oauth-start-server', () => {
   })
 })
 
+ipcMain.handle('oauth-cancel-server', () => {
+  if (_oauthServer) {
+    try { _oauthServer.close() } catch {}
+    _oauthServer = null
+  }
+})
+
 // ── OAuth: open system browser with auth URL ──────────────────────────────────
 ipcMain.on('open-auth-browser', (event, authUrl) => {
   shell.openExternal(authUrl)

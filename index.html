@@ -1596,11 +1596,12 @@
 
     btn.textContent = locale.auth.signingInWait
 
-    // Reset button after 5 min if OAuth callback never arrives (e.g. user closed browser)
+    // Reset button after 90s if OAuth callback never arrives (e.g. user closed browser)
     _oauthTimeout = setTimeout(() => {
       _pkceSession = null
+      ipcRenderer.invoke('oauth-cancel-server').catch(() => {})
       if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
-    }, 5 * 60 * 1000)
+    }, 90 * 1000)
   }
 
   // ── OAuth callback from main process ──────────────────────────────────────
