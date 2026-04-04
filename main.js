@@ -384,7 +384,7 @@ try {
     signOut: fbSignOut,
     onAuthStateChanged,
   } = require('firebase/auth')
-  const { getFirestore, doc, getDoc, setDoc, serverTimestamp } = require('firebase/firestore')
+  const { getFirestore, doc, getDoc, setDoc, serverTimestamp, increment, addDoc, collection } = require('firebase/firestore')
   const _fbCfg = require('./src/firebase-config.js')
 
   const fbApp  = getApps().length ? getApp() : initializeApp(_fbCfg.firebase)
@@ -422,11 +422,37 @@ try {
     await setDoc(ref, cleaned, merge ? { merge: true } : undefined)
   })
 
+  ipcMain.handle('firebase-sync-history', async (_event, { uid, entry }) => {
+    const ref = doc(fbDb, 'users', uid, 'history', entry.date)
+    await setDoc(ref, { ...entry, updatedAt: serverTimestamp() }, { merge: true })
+  })
+
+  // analytics/daily/{date}: aggregate confirms + skips across all users
+  // dau = distinct active users (incremented once per user per day via merge)
+  ipcMain.handle('firebase-analytics-agg', async (_event, { date, key, type }) => {
+    const ref = doc(fbDb, 'analytics', 'daily', date, key)
+    const field = type === 'confirm' ? 'confirms' : 'skips'
+    await setDoc(ref, {
+      [field]:    increment(1),
+      updatedAt:  serverTimestamp(),
+    }, { merge: true })
+    // Mark DAU: one write per uid per day (merge prevents double-counting)
+    const dauRef = doc(fbDb, 'analytics', 'dau', date, _event.sender?.id?.toString() || 'unknown')
+    await setDoc(dauRef, { ts: serverTimestamp() }, { merge: true })
+  })
+
 } catch (e) {
   console.error('Firebase main-process init failed:', e)
   _fbCurrentUser = null
   // Stub handlers so renderer invoke() calls don't hang
-  ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc'].forEach(ch => {
+  ipcMain.handle('firebase-submit-feedback', async (_event, { uid, text, appVersion, lang, platform }) => {
+    await addDoc(collection(fbDb, 'feedback'), {
+      uid, text, appVersion, lang, platform,
+      createdAt: serverTimestamp(),
+    })
+  })
+
+  ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc', 'firebase-sync-history', 'firebase-analytics-agg', 'firebase-submit-feedback'].forEach(ch => {
     try { ipcMain.handle(ch, () => null) } catch {}
   })
 }

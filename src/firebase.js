@@ -78,8 +78,27 @@ function serverTimestamp() {
   return { __serverTimestamp: true }
 }
 
+// ── Analytics aggregation ─────────────────────────────────────────────────────
+// Increments confirm/skip counters in analytics/daily/{date}/{key}.
+// Fire-and-forget — failures are non-critical.
+async function analyticsAgg(date, key, type) {
+  return ipcRenderer.invoke('firebase-analytics-agg', { date, key, type })
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────────────
+async function submitFeedback(uid, text, appVersion, lang, platform) {
+  return ipcRenderer.invoke('firebase-submit-feedback', { uid, text, appVersion, lang, platform })
+}
+
+// ── History sync ──────────────────────────────────────────────────────────────
+// Writes one day's history entry to users/{uid}/history/{date}.
+// todayEntry: { date, water:{confirms,skips,intervalMin}, move:{...}, eyes:{...} }
+async function syncHistoryEntry(uid, todayEntry) {
+  return ipcRenderer.invoke('firebase-sync-history', { uid, entry: todayEntry })
+}
+
 module.exports = {
   auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
-  doc, getDoc, setDoc, serverTimestamp,
+  doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback,
 }

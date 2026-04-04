@@ -186,4 +186,18 @@ module.exports = {
     syncOk:         'Settings synced ✓',
     syncError:      'Sync error — changes saved locally',
   },
+
+  feedback: {
+    cardName:     'Send Feedback',
+    cardDesc:     'Help us improve HealthBreak',
+    btnOpen:      'Write feedback',
+    dialogTitle:  'Send Feedback',
+    dialogDesc:   'Tell us what you think (1–500 characters)',
+    btnSend:      'Send',
+    btnCancel:    'Cancel',
+    sending:      'Sending…',
+    sent:         'Feedback sent — thank you!',
+    tooShort:     'Please write at least 1 character.',
+    error:        'Failed to send. Please try again.',
+  },
 };

@@ -186,4 +186,18 @@ module.exports = {
     syncOk:         'Đã đồng bộ ✓',
     syncError:      'Lỗi đồng bộ — đã lưu cục bộ',
   },
+
+  feedback: {
+    cardName:     'Gửi phản hồi',
+    cardDesc:     'Giúp chúng tôi cải thiện HealthBreak',
+    btnOpen:      'Viết phản hồi',
+    dialogTitle:  'Gửi phản hồi',
+    dialogDesc:   'Chia sẻ ý kiến của bạn (1–500 ký tự)',
+    btnSend:      'Gửi',
+    btnCancel:    'Huỷ',
+    sending:      'Đang gửi…',
+    sent:         'Đã gửi phản hồi — cảm ơn bạn!',
+    tooShort:     'Vui lòng nhập ít nhất 1 ký tự.',
+    error:        'Gửi thất bại. Vui lòng thử lại.',
+  },
 };

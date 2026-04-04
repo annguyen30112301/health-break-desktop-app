@@ -696,6 +696,16 @@
   <div class="card-desc" id="auth-card-desc"></div>
 </div>
 
+<!-- ── Feedback ───────────────────────────────────────────────────────────── -->
+<div class="card" id="card-feedback" style="display:none; margin-bottom: 12px;">
+  <div class="card-top">
+    <div class="card-icon">💬</div>
+    <div class="card-name" id="feedback-card-name"></div>
+    <button class="btn-edit" id="btn-feedback-open" onclick="openFeedbackDialog()"></button>
+  </div>
+  <div class="card-desc" id="feedback-card-desc"></div>
+</div>
+
 <div class="status-bar" id="status"></div>
 
 <!-- ── Toast ──────────────────────────────────────────────────────────────── -->
@@ -721,6 +731,22 @@
     <div class="dialog-actions">
       <button class="btn-dialog-primary"   id="btn-restore-yes"  onclick="handleRestoreYes()"></button>
       <button class="btn-dialog-secondary" id="btn-restore-skip" onclick="handleRestoreSkip()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Feedback dialog ────────────────────────────────────────────────────── -->
+<div class="dialog-backdrop" id="feedback-backdrop">
+  <div class="dialog">
+    <div class="dialog-title" id="feedback-title"></div>
+    <div class="dialog-desc"  id="feedback-desc"></div>
+    <textarea id="feedback-text" maxlength="500" rows="4"
+      style="width:100%;box-sizing:border-box;margin:12px 0 4px;padding:8px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;resize:none;font-family:inherit;"
+      oninput="updateFeedbackCount()"></textarea>
+    <div id="feedback-count" style="font-size:11px;color:#aaa;text-align:right;margin-bottom:12px;">0 / 500</div>
+    <div class="dialog-actions">
+      <button class="btn-dialog-primary"   id="btn-feedback-send"   onclick="handleFeedbackSend()"></button>
+      <button class="btn-dialog-secondary" id="btn-feedback-cancel" onclick="closeFeedbackDialog()"></button>
     </div>
   </div>
 </div>
@@ -879,6 +905,9 @@
 
     // Update auth card + dialog strings
     if (typeof applyAuthLocale === 'function') applyAuthLocale()
+
+    // Update feedback card + dialog strings
+    if (typeof applyFeedbackLocale === 'function') applyFeedbackLocale()
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -1031,6 +1060,7 @@
     dailyStats[skipKey] = (dailyStats[skipKey] || 0) + 1
     saveStats(dailyStats)
     syncTodayToHistory()
+    if (analyticsAgg) analyticsAgg(todayStr(), key, 'skip').catch(() => {})
   })
   // ────────────────────────────────────────────────────────────────────────
 
@@ -1346,6 +1376,10 @@
     }
     const history = loadHistory()
     saveHistory(appendToHistory(history, todayEntry))
+    // Sync to Firestore if online
+    if (currentUser && syncHistoryEntry) {
+      syncHistoryEntry(currentUser.uid, todayEntry).catch(e => console.warn('History sync error:', e))
+    }
   }
 
   let dailyStats = loadStats()
@@ -1355,6 +1389,7 @@
     saveStats(dailyStats)
     syncTodayToHistory()
     renderStatsDisplay(key)
+    if (analyticsAgg) analyticsAgg(todayStr(), key, 'confirm').catch(() => {})
   }
 
   function openDashboard() {
@@ -1490,12 +1525,12 @@
   // Wrapped in try-catch so a firebase load failure never breaks the rest of the app
   let auth = null, db = null, IS_CONFIGURED = false, GOOGLE_CLIENT_ID = '', GOOGLE_CLIENT_SECRET = ''
   let GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged
-  let doc, getDoc, setDoc, serverTimestamp
+  let doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback
   try {
     ;({
       auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
       GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
-      doc, getDoc, setDoc, serverTimestamp,
+      doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback,
     } = require('./src/firebase.js'))
   } catch (e) {
     console.error('Firebase failed to load:', e)
@@ -1551,6 +1586,7 @@
       btnEl.className     = 'btn-auth'
       btnEl.disabled      = false
     }
+    if (typeof updateFeedbackVisibility === 'function') updateFeedbackVisibility()
   }
 
   // Apply auth locale strings on language switch
@@ -1643,6 +1679,60 @@
       if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
     }
   })
+
+  // ── Feedback ──────────────────────────────────────────────────────────────
+  function applyFeedbackLocale() {
+    const loc = locale.feedback
+    document.getElementById('feedback-card-name').textContent  = loc.cardName
+    document.getElementById('feedback-card-desc').textContent  = loc.cardDesc
+    document.getElementById('btn-feedback-open').textContent   = loc.btnOpen
+    document.getElementById('feedback-title').textContent      = loc.dialogTitle
+    document.getElementById('feedback-desc').textContent       = loc.dialogDesc
+    document.getElementById('btn-feedback-send').textContent   = loc.btnSend
+    document.getElementById('btn-feedback-cancel').textContent = loc.btnCancel
+  }
+
+  function openFeedbackDialog() {
+    document.getElementById('feedback-text').value = ''
+    document.getElementById('feedback-count').textContent = '0 / 500'
+    document.getElementById('btn-feedback-send').disabled = false
+    document.getElementById('btn-feedback-send').textContent = locale.feedback.btnSend
+    document.getElementById('feedback-backdrop').style.display = 'flex'
+    document.getElementById('feedback-text').focus()
+  }
+
+  function closeFeedbackDialog() {
+    document.getElementById('feedback-backdrop').style.display = 'none'
+  }
+
+  function updateFeedbackCount() {
+    const len = document.getElementById('feedback-text').value.length
+    document.getElementById('feedback-count').textContent = `${len} / 500`
+  }
+
+  async function handleFeedbackSend() {
+    const text = document.getElementById('feedback-text').value.trim()
+    const btn  = document.getElementById('btn-feedback-send')
+    if (!text) { showToast(locale.feedback.tooShort, 2500); return }
+    btn.disabled    = true
+    btn.textContent = locale.feedback.sending
+    try {
+      const { version } = require('./package.json')
+      await submitFeedback(currentUser.uid, text, version, currentLang, process.platform)
+      closeFeedbackDialog()
+      showToast(locale.feedback.sent, 3000)
+    } catch (e) {
+      console.error('Feedback error:', e)
+      btn.disabled    = false
+      btn.textContent = locale.feedback.btnSend
+      showToast(locale.feedback.error, 3000)
+    }
+  }
+
+  // Show feedback card only when signed in
+  function updateFeedbackVisibility() {
+    document.getElementById('card-feedback').style.display = currentUser ? 'block' : 'none'
+  }
 
   // ── Firebase auth state listener ───────────────────────────────────────────
   let _authInitialized = false
@@ -1871,7 +1961,8 @@
   loadSettings()     // restore intervals + toggle states from localStorage
   loadWaterGoal()    // restore saved water goal (must run before applyLocale/initStats)
   applyLocale()      // apply all locale strings (runs after loadSettings so intervals are correct)
-  applyAuthLocale()  // auth card + dialog strings
+  applyAuthLocale()    // auth card + dialog strings
+  applyFeedbackLocale() // feedback card + dialog strings
   initOnboarding()   // show onboarding overlay if first run
   initAutoLaunch()   // async — updates auto-launch toggle
   initAuth()         // start Firebase auth state listener

@@ -18,16 +18,20 @@ service cloud.firestore {
       }
     }
 
-    // Analytics collection — read-only for users, admin writes (Sprint 3)
-    // match /analytics/{document=**} {
-    //   allow read: if request.auth != null;
-    //   allow write: if false;  // Server-side writes only
-    // }
+    // Analytics — written by authenticated clients, not readable by users
+    match /analytics/{document=**} {
+      allow write: if request.auth != null;
+      allow read:  if false;
+    }
 
-    // Feedback collection (Sprint 3)
-    // match /feedback/{docId} {
-    //   allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-    //   allow read, update, delete: if false;
-    // }
+    // Feedback — users can submit but not read/edit others
+    match /feedback/{docId} {
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() >= 1
+                    && request.resource.data.text.size() <= 500;
+      allow read, update, delete: if false;
+    }
   }
 }
