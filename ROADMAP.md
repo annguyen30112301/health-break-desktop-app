@@ -2,8 +2,8 @@
 
 > Cập nhật tự động sau mỗi commit. Xem chi tiết từng tính năng trong `tests/TEST-PLAN.md` và PRD tương ứng.
 
-**Last updated:** 2026-04-03
-**Overall progress:** 11 / 27 tasks (41%)
+**Last updated:** 2026-04-04
+**Overall progress:** 19 / 27 tasks (70%)
 
 ---
 
@@ -41,19 +41,19 @@
 ## Sprint 2 — Google SSO & Firebase (PRD 2)
 > Login Google optional, Online/Offline mode, sync settings lên Firestore.
 
-**Progress:** 0 / 8 tasks (PR #30 đang mở, chưa merge, chưa test thật)
+**Progress:** 8 / 8 tasks ✅
 
 ### Week 3 — Firebase foundation & Auth
-- [~] `firebase-setup` — Tạo Firebase project, bật Auth (Google provider), Firestore rules draft
-- [~] `oauth-flow` — Electron OAuth: `app.setAsDefaultProtocolClient('healthbreak')`, bắt `open-url`, IPC token to renderer
-- [~] `auth-ui` — UI: nút "Đăng nhập với Google", badge Offline / Online mode trong cửa sổ chính
+- [x] `firebase-setup` — Tạo Firebase project, bật Auth (Google provider), Firestore rules draft
+- [x] `oauth-flow` — Electron OAuth: loopback redirect 127.0.0.1, IPC token to renderer
+- [x] `auth-ui` — UI: nút "Đăng nhập với Google", badge Offline / Online mode trong cửa sổ chính
 
 ### Week 4 — Sync & Migration
-- [~] `token-storage` — Lưu token bằng `safeStorage.encryptString` trong `userData`, không dùng localStorage
-- [~] `mode-switch` — Online/Offline mode switch: sau login, renderer đọc/ghi Firestore, không dùng localStorage cho data
-- [~] `settings-sync` — Sync settings lên `users/{uid}/settings` khi thay đổi (local-first, retry khi offline)
-- [~] `settings-restore` — Load settings từ Firestore khi login trên máy mới
-- [~] `migration-dialog` — Dialog khi login lần đầu có local data: "Đồng bộ" hoặc "Bắt đầu mới"
+- [x] `token-storage` — Lưu token bằng `safeStorage.encryptString` trong `userData`, không dùng localStorage
+- [x] `mode-switch` — Online/Offline mode switch: sau login, renderer đọc/ghi Firestore, không dùng localStorage cho data
+- [x] `settings-sync` — Sync settings lên `users/{uid}/settings` khi thay đổi (local-first, retry khi offline)
+- [x] `settings-restore` — Load settings từ Firestore khi login trên máy mới
+- [x] `migration-dialog` — Dialog khi login lần đầu có local data: "Đồng bộ" hoặc "Bắt đầu mới"
 
 ---
 
