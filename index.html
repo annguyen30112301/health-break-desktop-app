@@ -1488,12 +1488,12 @@
 
   // ── Auth / Cloud Sync ─────────────────────────────────────────────────────
   // Wrapped in try-catch so a firebase load failure never breaks the rest of the app
-  let auth = null, db = null, IS_CONFIGURED = false, GOOGLE_CLIENT_ID = ''
+  let auth = null, db = null, IS_CONFIGURED = false, GOOGLE_CLIENT_ID = '', GOOGLE_CLIENT_SECRET = ''
   let GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged
   let doc, getDoc, setDoc, serverTimestamp
   try {
     ;({
-      auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID,
+      auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
       GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
       doc, getDoc, setDoc, serverTimestamp,
     } = require('./src/firebase.js'))
@@ -1619,7 +1619,8 @@
         parsed.code,
         _pkceSession.codeVerifier,
         GOOGLE_CLIENT_ID,
-        _pkceSession.redirectUri
+        _pkceSession.redirectUri,
+        GOOGLE_CLIENT_SECRET
       )
       _pkceSession = null
 

@@ -14,8 +14,9 @@ const { ipcRenderer } = require('electron')
 let _cfg = null
 try { _cfg = require('./firebase-config.js') } catch {}
 
-const IS_CONFIGURED    = !!_cfg?.firebase?.apiKey
-const GOOGLE_CLIENT_ID = _cfg?.googleClientId || ''
+const IS_CONFIGURED        = !!_cfg?.firebase?.apiKey
+const GOOGLE_CLIENT_ID     = _cfg?.googleClientId     || ''
+const GOOGLE_CLIENT_SECRET = _cfg?.googleClientSecret || ''
 
 // Opaque handles passed around in index.html as `auth` / `db`.
 // All operations go through the IPC wrappers below — never inspected directly.
@@ -78,7 +79,7 @@ function serverTimestamp() {
 }
 
 module.exports = {
-  auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID,
+  auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
   doc, getDoc, setDoc, serverTimestamp,
 }

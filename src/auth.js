@@ -71,17 +71,19 @@ function buildGoogleAuthUrl(clientId, codeChallenge, state, redirectUri) {
  * Uses PKCE so no client_secret is required.
  * @returns {Promise<{ access_token, id_token, refresh_token, ... }>}
  */
-async function exchangeCodeForTokens(code, codeVerifier, clientId, redirectUri) {
+async function exchangeCodeForTokens(code, codeVerifier, clientId, redirectUri, clientSecret) {
+  const params = {
+    code,
+    client_id:     clientId,
+    redirect_uri:  redirectUri,
+    grant_type:    'authorization_code',
+    code_verifier: codeVerifier,
+  }
+  if (clientSecret) params.client_secret = clientSecret
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code,
-      client_id:    clientId,
-      redirect_uri: redirectUri,
-      grant_type:   'authorization_code',
-      code_verifier: codeVerifier,
-    }),
+    body: new URLSearchParams(params),
   })
 
   const data = await response.json()
