@@ -14,8 +14,7 @@
 
 const crypto = require('crypto')
 
-const REDIRECT_URI = 'healthbreak://oauth/callback'
-const SCOPES       = 'openid email profile'
+const SCOPES = 'openid email profile'
 
 // ── PKCE helpers ─────────────────────────────────────────────────────────────
 
@@ -50,10 +49,10 @@ function generatePKCE() {
  * @param {string} state         - CSRF state token
  * @returns {string} URL to open in system browser
  */
-function buildGoogleAuthUrl(clientId, codeChallenge, state) {
+function buildGoogleAuthUrl(clientId, codeChallenge, state, redirectUri) {
   const params = new URLSearchParams({
     client_id:             clientId,
-    redirect_uri:          REDIRECT_URI,
+    redirect_uri:          redirectUri,
     response_type:         'code',
     scope:                 SCOPES,
     code_challenge:        codeChallenge,
@@ -72,14 +71,14 @@ function buildGoogleAuthUrl(clientId, codeChallenge, state) {
  * Uses PKCE so no client_secret is required.
  * @returns {Promise<{ access_token, id_token, refresh_token, ... }>}
  */
-async function exchangeCodeForTokens(code, codeVerifier, clientId) {
+async function exchangeCodeForTokens(code, codeVerifier, clientId, redirectUri) {
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       code,
       client_id:    clientId,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       grant_type:   'authorization_code',
       code_verifier: codeVerifier,
     }),
@@ -142,5 +141,4 @@ module.exports = {
   exchangeCodeForTokens,
   parseCallbackUrl,
   refreshAccessToken,
-  REDIRECT_URI,
 }

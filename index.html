@@ -1588,9 +1588,10 @@
     btn.disabled    = true
     btn.textContent = locale.auth.signingIn
 
-    const pkce = generatePKCE()
-    _pkceSession   = pkce
-    const authUrl  = buildGoogleAuthUrl(GOOGLE_CLIENT_ID, pkce.codeChallenge, pkce.state)
+    const pkce       = generatePKCE()
+    const redirectUri = await ipcRenderer.invoke('oauth-start-server')
+    _pkceSession     = { ...pkce, redirectUri }
+    const authUrl    = buildGoogleAuthUrl(GOOGLE_CLIENT_ID, pkce.codeChallenge, pkce.state, redirectUri)
     ipcRenderer.send('open-auth-browser', authUrl)
 
     btn.textContent = locale.auth.signingInWait
@@ -1616,7 +1617,8 @@
       const tokens = await exchangeCodeForTokens(
         parsed.code,
         _pkceSession.codeVerifier,
-        GOOGLE_CLIENT_ID
+        GOOGLE_CLIENT_ID,
+        _pkceSession.redirectUri
       )
       _pkceSession = null
 

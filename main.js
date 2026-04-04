@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, shell, saf
 const path = require('path')
 const os   = require('os')
 const fs   = require('fs')
+const http = require('http')
 
 app.setName('HealthBreak')
 
@@ -262,6 +263,40 @@ ipcMain.on('set-language', (event, lang) => {
     currentLocale = require('./locales/en.js')
   }
   updateTrayMenu()
+})
+
+// ── OAuth: loopback redirect server ──────────────────────────────────────────
+// Starts a one-shot HTTP server on a random port (127.0.0.1).
+// Google redirects the browser to http://127.0.0.1:{port}?code=xxx&state=yyy.
+// We extract the callback, close the server, and forward to the renderer.
+let _oauthServer = null
+
+ipcMain.handle('oauth-start-server', () => {
+  return new Promise((resolve, reject) => {
+    if (_oauthServer) {
+      try { _oauthServer.close() } catch {}
+      _oauthServer = null
+    }
+    const server = http.createServer((req, res) => {
+      const url = new URL(req.url, 'http://localhost')
+      // Show a closing page to the browser
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end('<html><body><p>Sign-in complete. You can close this tab.</p><script>window.close()</script></body></html>')
+      server.close()
+      _oauthServer = null
+      // Forward to renderer as a pseudo healthbreak:// URL so parseCallbackUrl works unchanged
+      const callbackUrl = `healthbreak://oauth/callback${url.search}`
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('oauth-callback', callbackUrl)
+      }
+    })
+    server.on('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      _oauthServer = server
+      const { port } = server.address()
+      resolve(`http://127.0.0.1:${port}`)
+    })
+  })
 })
 
 // ── OAuth: open system browser with auth URL ──────────────────────────────────
