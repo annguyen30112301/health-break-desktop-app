@@ -216,6 +216,7 @@ module.exports = {
     sending:      'Đang gửi…',
     sent:         'Đã gửi phản hồi — cảm ơn bạn!',
     tooShort:     'Vui lòng nhập ít nhất 1 ký tự.',
+    tooLong:      'Phản hồi không được vượt quá 500 ký tự.',
     error:        'Gửi thất bại. Vui lòng thử lại.',
   },
 };

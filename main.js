@@ -437,17 +437,16 @@ try {
       [field]:    increment(1),
       updatedAt:  serverTimestamp(),
     }, { merge: true })
-    // Mark DAU: one write per uid per day (merge prevents double-counting)
-    const dauRef = doc(fbDb, 'analytics', 'dau', date, _event.sender?.id?.toString() || 'unknown')
-    await setDoc(dauRef, { ts: serverTimestamp() }, { merge: true })
+    // Mark DAU: one write per uid per day using Firebase uid (merge prevents double-counting)
+    const dauUid = _fbCurrentUser?.uid
+    if (dauUid) {
+      const dauRef = doc(fbDb, 'analytics', 'dau', date, dauUid)
+      await setDoc(dauRef, { ts: serverTimestamp() }, { merge: true })
+    }
   })
 
-} catch (e) {
-  console.error('Firebase main-process init failed:', e)
-  _fbCurrentUser = null
-  // Stub handlers so renderer invoke() calls don't hang
   ipcMain.handle('firebase-delete-account', async () => {
-    const user = fbAuth.currentUser
+    const user = _fbCurrentUser
     if (!user) throw new Error('Not signed in')
     const uid = user.uid
     // Delete all user subcollections: settings, history
@@ -458,8 +457,8 @@ try {
     }
     batch.delete(doc(fbDb, 'users', uid))
     await batch.commit()
-    // Delete Firebase Auth account
-    await deleteUser(user)
+    // Delete Firebase Auth account (must be after Firestore cleanup)
+    await deleteUser(fbAuth.currentUser)
   })
 
   ipcMain.handle('firebase-submit-feedback', async (_event, { uid, text, appVersion, lang, platform }) => {
@@ -469,6 +468,10 @@ try {
     })
   })
 
+} catch (e) {
+  console.error('Firebase main-process init failed:', e)
+  _fbCurrentUser = null
+  // Stub handlers so renderer invoke() calls don't hang
   ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc', 'firebase-sync-history', 'firebase-analytics-agg', 'firebase-submit-feedback', 'firebase-delete-account'].forEach(ch => {
     try { ipcMain.handle(ch, () => null) } catch {}
   })

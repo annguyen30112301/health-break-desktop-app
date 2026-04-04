@@ -567,7 +567,7 @@
     <button id="btn-lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
     <button id="btn-lang-vi" class="lang-btn" onclick="setLanguage('vi')">VI</button>
     <button class="btn-stats" id="btn-stats" onclick="openDashboard()"></button>
-    <div id="header-avatar" style="display:none; width:28px; height:28px; border-radius:50%; background:#4CAF50; color:white; font-size:13px; font-weight:700; display:none; align-items:center; justify-content:center; cursor:default;" title=""></div>
+    <div id="header-avatar" style="display:none; width:28px; height:28px; border-radius:50%; background:#4CAF50; color:white; font-size:13px; font-weight:700; align-items:center; justify-content:center; cursor:default;" title=""></div>
   </div>
 </div>
 
@@ -1785,9 +1785,10 @@
     try {
       await deleteAccount()
       closeDeleteDialog()
-      // Clear local data
+      // Clear local data and sign out
       ;[STORAGE_KEY, WATER_GOAL_KEY, STATS_KEY, HISTORY_KEY, AUTH_MODE_KEY].forEach(k => localStorage.removeItem(k))
       await ipcRenderer.invoke('safe-storage-delete')
+      await signOut(auth).catch(() => {})
       showToast(locale.account.deleteOk, 3000)
     } catch (e) {
       console.error('Delete account error:', e)
@@ -1831,6 +1832,7 @@
     const text = document.getElementById('feedback-text').value.trim()
     const btn  = document.getElementById('btn-feedback-send')
     if (!text) { showToast(locale.feedback.tooShort, 2500); return }
+    if (text.length > 500) { showToast(locale.feedback.tooLong, 2500); return }
     btn.disabled    = true
     btn.textContent = locale.feedback.sending
     try {

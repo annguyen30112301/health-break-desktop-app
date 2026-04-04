@@ -216,6 +216,7 @@ module.exports = {
     sending:      'Sending…',
     sent:         'Feedback sent — thank you!',
     tooShort:     'Please write at least 1 character.',
+    tooLong:      'Feedback must be 500 characters or fewer.',
     error:        'Failed to send. Please try again.',
   },
 };
