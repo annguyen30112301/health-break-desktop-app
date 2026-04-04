@@ -567,6 +567,7 @@
     <button id="btn-lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
     <button id="btn-lang-vi" class="lang-btn" onclick="setLanguage('vi')">VI</button>
     <button class="btn-stats" id="btn-stats" onclick="openDashboard()"></button>
+    <div id="header-avatar" style="display:none; width:28px; height:28px; border-radius:50%; background:#4CAF50; color:white; font-size:13px; font-weight:700; display:none; align-items:center; justify-content:center; cursor:default;" title=""></div>
   </div>
 </div>
 
@@ -696,6 +697,18 @@
   <div class="card-desc" id="auth-card-desc"></div>
 </div>
 
+<!-- ── Account ────────────────────────────────────────────────────────────── -->
+<div class="card" id="card-account" style="display:none; margin-bottom: 12px;">
+  <div class="card-top">
+    <div class="card-icon">👤</div>
+    <div class="card-name" id="account-card-name"></div>
+  </div>
+  <div class="card-desc" id="account-card-email" style="margin-bottom:4px;"></div>
+  <div class="card-desc" id="account-card-joined" style="color:#aaa; font-size:12px; margin-bottom:8px;"></div>
+  <button id="btn-account-delete" onclick="openDeleteDialog()"
+    style="font-size:12px;color:#e53935;background:none;border:1px solid #e53935;border-radius:6px;padding:4px 12px;cursor:pointer;"></button>
+</div>
+
 <!-- ── Feedback ───────────────────────────────────────────────────────────── -->
 <div class="card" id="card-feedback" style="display:none; margin-bottom: 12px;">
   <div class="card-top">
@@ -731,6 +744,19 @@
     <div class="dialog-actions">
       <button class="btn-dialog-primary"   id="btn-restore-yes"  onclick="handleRestoreYes()"></button>
       <button class="btn-dialog-secondary" id="btn-restore-skip" onclick="handleRestoreSkip()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete account dialog ──────────────────────────────────────────────── -->
+<div class="dialog-backdrop" id="delete-backdrop">
+  <div class="dialog">
+    <div class="dialog-title" id="delete-title"></div>
+    <div class="dialog-desc"  id="delete-desc"></div>
+    <div class="dialog-actions">
+      <button class="btn-dialog-primary" id="btn-delete-confirm" onclick="handleDeleteAccount()"
+        style="background:#e53935; border-color:#e53935;"></button>
+      <button class="btn-dialog-secondary" id="btn-delete-cancel" onclick="closeDeleteDialog()"></button>
     </div>
   </div>
 </div>
@@ -779,6 +805,7 @@
   <div class="onboard-dots">
     <div class="onboard-dot active" id="onboard-dot-1"></div>
     <div class="onboard-dot"        id="onboard-dot-2"></div>
+    <div class="onboard-dot"        id="onboard-dot-3"></div>
   </div>
 
   <!-- Language switcher -->
@@ -817,8 +844,18 @@
       style="background:#1e88e5;"
       onmouseover="this.style.background='#1976D2'"
       onmouseout="this.style.background='#1e88e5'"
+      onclick="goToOnboardStep(3)"></button>
+    <button class="btn-onboard-skip" id="ob-skip-btn" onclick="goToOnboardStep(3)"></button>
+  </div>
+
+  <!-- Step 3: Privacy notice -->
+  <div class="onboard-step ob-hidden-right" id="onboard-step-3">
+    <div class="onboard-icon">🔒</div>
+    <div class="onboard-title"  id="ob-step3-title"></div>
+    <div class="onboard-desc"   id="ob-step3-desc" style="text-align:left; font-size:13px; line-height:1.6;"></div>
+    <button class="btn-onboard-primary" id="ob-privacy-ok-btn"
       onclick="finishOnboarding(false)"></button>
-    <button class="btn-onboard-skip" id="ob-skip-btn" onclick="finishOnboarding(true)"></button>
+    <button class="btn-onboard-skip" id="ob-privacy-skip-btn" onclick="finishOnboarding(true)"></button>
   </div>
 
 </div>
@@ -905,6 +942,9 @@
 
     // Update auth card + dialog strings
     if (typeof applyAuthLocale === 'function') applyAuthLocale()
+
+    // Update account card + dialog strings
+    if (typeof applyAccountLocale === 'function') applyAccountLocale()
 
     // Update feedback card + dialog strings
     if (typeof applyFeedbackLocale === 'function') applyFeedbackLocale()
@@ -1434,7 +1474,7 @@
     applyOnboardingLocale()  // texts must be set AFTER overlay is shown
   }
 
-  function goToOnboardStep(n) {
+  function _goToOnboardStep(n) {
     const from = document.getElementById(`onboard-step-${onboardStep}`)
     const to   = document.getElementById(`onboard-step-${n}`)
     const fwd  = n > onboardStep
@@ -1449,6 +1489,7 @@
 
     document.getElementById('onboard-dot-1').classList.toggle('active', n === 1)
     document.getElementById('onboard-dot-2').classList.toggle('active', n === 2)
+    document.getElementById('onboard-dot-3').classList.toggle('active', n === 3)
   }
 
   function onOnboardInputChange() {
@@ -1462,36 +1503,41 @@
     }
   }
 
-  function finishOnboarding(skip) {
-    if (!skip) {
-      const w = parseFloat(document.getElementById('onboard-weight').value)
-      if (!(w >= 30 && w <= 200)) {
-        const el = document.getElementById('onboard-recommendation')
-        el.style.color = '#e53935'
-        el.textContent = locale.waterGoal.invalidWeight || (w ? 'Weight must be 30–200 kg' : 'Please enter your weight')
-        return
-      }
-      if (w >= 30 && w <= 200) {
-        waterGoal = calcWaterGoal(w)
-        persistWaterGoal()
-
-        // Auto-apply suggested interval (clamped to valid range)
-        const limits      = NORMAL_LIMITS.water
-        const clampedMin = calcSuggestedWaterInterval(waterGoal.sessions, limits)
-        const r           = reminders.water
-        r.pendingInterval = clampedMin * 60
-        r.interval        = r.pendingInterval
-        r.remaining       = r.interval
-        document.getElementById('slider-water').value          = clampedMin
-        document.getElementById('val-water').textContent       = `${clampedMin} ${locale.minFull}`
-        document.getElementById('desc-water').innerHTML        = locale.reminders.water.desc(clampedMin)
-        document.getElementById('timer-water').textContent     = formatTime(r.interval)
-        if (r.active) startTimer('water')
-        saveSettings()
-        renderStatsDisplay('water')
-      }
+  // Save water goal from onboarding step 2 (called when moving step 2→3)
+  function saveOnboardWaterGoal(skip) {
+    if (skip) return true
+    const w = parseFloat(document.getElementById('onboard-weight').value)
+    if (!(w >= 30 && w <= 200)) {
+      const el = document.getElementById('onboard-recommendation')
+      el.style.color = '#e53935'
+      el.textContent = locale.waterGoal.invalidWeight || (w ? 'Weight must be 30–200 kg' : 'Please enter your weight')
+      return false
     }
+    waterGoal = calcWaterGoal(w)
+    persistWaterGoal()
+    const limits     = NORMAL_LIMITS.water
+    const clampedMin = calcSuggestedWaterInterval(waterGoal.sessions, limits)
+    const r          = reminders.water
+    r.pendingInterval = clampedMin * 60
+    r.interval        = r.pendingInterval
+    r.remaining       = r.interval
+    document.getElementById('slider-water').value      = clampedMin
+    document.getElementById('val-water').textContent   = `${clampedMin} ${locale.minFull}`
+    document.getElementById('desc-water').innerHTML    = locale.reminders.water.desc(clampedMin)
+    document.getElementById('timer-water').textContent = formatTime(r.interval)
+    if (r.active) startTimer('water')
+    saveSettings()
+    renderStatsDisplay('water')
+    return true
+  }
 
+  function goToOnboardStep(n, skip) {
+    // Only validate/save water goal when transitioning from step 2 to step 3
+    if (n === 3 && onboardStep === 2 && !saveOnboardWaterGoal(!!skip)) return
+    _goToOnboardStep(n)
+  }
+
+  function finishOnboarding(skip) {
     localStorage.setItem(ONBOARDED_KEY, '1')
 
     const overlay = document.getElementById('onboarding-overlay')
@@ -1515,6 +1561,11 @@
     document.getElementById('ob-weight-label').textContent = wg.weightLabel
     // Refresh live recommendation if inputs already filled
     onOnboardInputChange()
+    // Step 3: privacy notice
+    document.getElementById('ob-step3-title').textContent       = ob.step3Title
+    document.getElementById('ob-step3-desc').textContent        = ob.step3Desc
+    document.getElementById('ob-privacy-ok-btn').textContent    = ob.privacyOk
+    document.getElementById('ob-privacy-skip-btn').textContent  = ob.privacySkip
     // Sync lang buttons
     document.getElementById('ob-btn-lang-en').classList.toggle('active', currentLang === 'en')
     document.getElementById('ob-btn-lang-vi').classList.toggle('active', currentLang === 'vi')
@@ -1525,12 +1576,12 @@
   // Wrapped in try-catch so a firebase load failure never breaks the rest of the app
   let auth = null, db = null, IS_CONFIGURED = false, GOOGLE_CLIENT_ID = '', GOOGLE_CLIENT_SECRET = ''
   let GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged
-  let doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback
+  let doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback, deleteAccount
   try {
     ;({
       auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
       GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
-      doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback,
+      doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback, deleteAccount,
     } = require('./src/firebase.js'))
   } catch (e) {
     console.error('Firebase failed to load:', e)
@@ -1586,7 +1637,20 @@
       btnEl.className     = 'btn-auth'
       btnEl.disabled      = false
     }
-    if (typeof updateFeedbackVisibility === 'function') updateFeedbackVisibility()
+    if (typeof updateFeedbackVisibility  === 'function') updateFeedbackVisibility()
+    if (typeof updateAccountVisibility   === 'function') updateAccountVisibility()
+    // Avatar in header
+    const avatarEl = document.getElementById('header-avatar')
+    if (avatarEl) {
+      if (currentUser) {
+        const initial = (currentUser.email || '?')[0].toUpperCase()
+        avatarEl.textContent    = initial
+        avatarEl.title          = currentUser.email
+        avatarEl.style.display  = 'flex'
+      } else {
+        avatarEl.style.display  = 'none'
+      }
+    }
   }
 
   // Apply auth locale strings on language switch
@@ -1679,6 +1743,59 @@
       if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
     }
   })
+
+  // ── Account ────────────────────────────────────────────────────────────────
+  function applyAccountLocale() {
+    const loc = locale.account
+    document.getElementById('account-card-name').textContent   = loc.cardName
+    document.getElementById('btn-account-delete').textContent  = loc.btnDelete
+    document.getElementById('delete-title').textContent        = loc.deleteTitle
+    document.getElementById('delete-desc').textContent         = loc.deleteDesc
+    document.getElementById('btn-delete-confirm').textContent  = loc.deleteConfirm
+    document.getElementById('btn-delete-cancel').textContent   = loc.deleteCancel
+    if (currentUser) {
+      document.getElementById('account-card-email').textContent  = locale.account.email(currentUser.email)
+      const joined = currentUser.creationTime
+        ? new Date(currentUser.creationTime).toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US')
+        : ''
+      document.getElementById('account-card-joined').textContent = joined ? locale.account.joined(joined) : ''
+    }
+  }
+
+  function updateAccountVisibility() {
+    const show = !!currentUser
+    document.getElementById('card-account').style.display = show ? 'block' : 'none'
+    if (show) applyAccountLocale()
+  }
+
+  function openDeleteDialog() {
+    document.getElementById('btn-delete-confirm').disabled    = false
+    document.getElementById('btn-delete-confirm').textContent = locale.account.deleteConfirm
+    document.getElementById('delete-backdrop').style.display = 'flex'
+  }
+
+  function closeDeleteDialog() {
+    document.getElementById('delete-backdrop').style.display = 'none'
+  }
+
+  async function handleDeleteAccount() {
+    const btn = document.getElementById('btn-delete-confirm')
+    btn.disabled    = true
+    btn.textContent = locale.account.deleting
+    try {
+      await deleteAccount()
+      closeDeleteDialog()
+      // Clear local data
+      ;[STORAGE_KEY, WATER_GOAL_KEY, STATS_KEY, HISTORY_KEY, AUTH_MODE_KEY].forEach(k => localStorage.removeItem(k))
+      await ipcRenderer.invoke('safe-storage-delete')
+      showToast(locale.account.deleteOk, 3000)
+    } catch (e) {
+      console.error('Delete account error:', e)
+      btn.disabled    = false
+      btn.textContent = locale.account.deleteConfirm
+      showToast(locale.account.deleteError, 3000)
+    }
+  }
 
   // ── Feedback ──────────────────────────────────────────────────────────────
   function applyFeedbackLocale() {

@@ -85,6 +85,12 @@ async function analyticsAgg(date, key, type) {
   return ipcRenderer.invoke('firebase-analytics-agg', { date, key, type })
 }
 
+// ── Account delete ────────────────────────────────────────────────────────────
+// Deletes all Firestore user data + Firebase Auth account.
+async function deleteAccount() {
+  return ipcRenderer.invoke('firebase-delete-account')
+}
+
 // ── Feedback ──────────────────────────────────────────────────────────────────
 async function submitFeedback(uid, text, appVersion, lang, platform) {
   return ipcRenderer.invoke('firebase-submit-feedback', { uid, text, appVersion, lang, platform })
@@ -100,5 +106,5 @@ async function syncHistoryEntry(uid, todayEntry) {
 module.exports = {
   auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
-  doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback,
+  doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback, deleteAccount,
 }
