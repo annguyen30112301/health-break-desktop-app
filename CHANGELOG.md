@@ -4,6 +4,54 @@ All notable changes to HealthBreak will be documented in this file.
 
 ---
 
+## [1.1.0] - 2026-04-04
+
+### New Features
+
+#### Statistics Dashboard (Sprint 1)
+- **Stats button** in main window opens an interactive dashboard in the default browser
+- **30-day history** — confirm/skip actions recorded daily in `localStorage`; history preserved across restarts
+- **SVG bar charts** for water intake (ml/day), eye rest (min/day), and exercise (sessions + min/day)
+- **7/30-day toggle** — re-renders charts without page reload
+- **Skip rate** — per-reminder-type skip percentage displayed inline; shows "—" when no data
+- **Full EN/VI localization** — dashboard renders in the active app language
+
+#### Google Sign-In & Cloud Sync (Sprint 2)
+- **Google OAuth** — optional sign-in via PKCE + loopback redirect (`http://127.0.0.1:{port}`); no custom URI scheme required
+- **Online / Offline mode** — badge in auth card shows current sync state
+- **Firestore settings sync** — intervals and toggles written to `users/{uid}/settings` on every change; restored on new device sign-in
+- **Token persistence** — refresh token stored with `safeStorage.encryptString`; session restored silently on relaunch
+- **Migration dialog** — first sign-in with local data prompts: sync to cloud or start fresh
+- **Restore dialog** — fresh device with cloud data prompts: restore from cloud or keep local defaults
+
+#### Community & Admin (Sprint 3)
+- **History sync** — daily confirm/skip history written to `users/{uid}/history/{date}` in Firestore
+- **Analytics aggregates** — `FieldValue.increment` counters in `analytics/daily/{date}` per reminder type (confirms, skips, DAU)
+- **Feedback form** — signed-in users can send 1–500 character feedback; stored in `feedback/{autoId}` collection
+- **Account card** — shows email address and account join date
+- **Account deletion** — removes all Firestore user data + Firebase Auth account; returns to Offline mode
+- **Onboarding step 3** — privacy notice before optional Google sign-in; 3-dot progress indicator
+- **Avatar** — header shows email initial circle when signed in
+
+### Security
+- Replace dynamic `require(\`./locales/\${lang}\`)` with static locale map (eliminates dynamic path in require)
+- Temp dashboard file now uses randomized directory (`fs.mkdtempSync`) with mode `0o600` instead of fixed filename
+- IPC listeners guarded with `removeAllListeners` before registration to prevent listener accumulation on reload
+- OAuth state token comparison now uses `crypto.timingSafeEqual` to prevent timing-based CSRF attacks
+
+### Fixed
+- `firebase-delete-account` and `firebase-submit-feedback` IPC handlers were inside `catch` block — only ran when Firebase init *failed*. Moved to `try` block.
+- DAU analytics used unstable Electron `WebContents.id`; now uses Firebase `uid`
+- Missing `signOut(auth)` call after account deletion left stale auth state
+- No client-side feedback length limit — text > 500 chars now rejected before IPC call
+
+### Tests
+- 72 unit tests across `utils.test.js` (43) and `auth.test.js` (29)
+- `auth.test.js` covers `generatePKCE`, `buildGoogleAuthUrl`, `parseCallbackUrl`
+- TEST-PLAN.md expanded to 90+ test cases (E2E + unit) for all 3 sprints
+
+---
+
 ## [1.0.1] - 2026-04-02
 
 ### New Features

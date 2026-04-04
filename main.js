@@ -18,8 +18,13 @@ if (process.defaultApp) {
   app.setAsDefaultProtocolClient(PROTOCOL)
 }
 
+// Locale map — preloaded to avoid dynamic require() with variable paths
+const _LOCALES = {
+  en: require('./locales/en.js'),
+  vi: require('./locales/vi.js'),
+}
 // Default locale — renderer sends 'set-language' on load to sync
-let currentLocale = require('./locales/en.js')
+let currentLocale = _LOCALES.en
 
 let mainWindow
 let tray
@@ -247,8 +252,9 @@ ipcMain.on('open-dashboard', (event, { history, lang, loc }) => {
   try {
     const { generateDashboardHTML } = require('./src/dashboard.js')
     const html     = generateDashboardHTML(history, lang, loc)
-    const tmpFile  = path.join(os.tmpdir(), 'healthbreak-stats.html')
-    fs.writeFileSync(tmpFile, html, 'utf8')
+    const tmpDir   = fs.mkdtempSync(path.join(os.tmpdir(), 'healthbreak-'))
+    const tmpFile  = path.join(tmpDir, 'stats.html')
+    fs.writeFileSync(tmpFile, html, { encoding: 'utf8', mode: 0o600 })
     shell.openExternal(`file://${tmpFile}`)
   } catch (e) {
     console.error('Dashboard generation failed:', e)
@@ -256,12 +262,8 @@ ipcMain.on('open-dashboard', (event, { history, lang, loc }) => {
 })
 
 ipcMain.on('set-language', (event, lang) => {
-  if (!['en', 'vi'].includes(lang)) return
-  try {
-    currentLocale = require(`./locales/${lang}.js`)
-  } catch {
-    currentLocale = require('./locales/en.js')
-  }
+  if (!_LOCALES[lang]) return
+  currentLocale = _LOCALES[lang]
   updateTrayMenu()
 })
 

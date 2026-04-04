@@ -862,6 +862,7 @@
 
 <script>
   const { ipcRenderer } = require('electron')
+  const crypto           = require('crypto')
 
   // ── Localization ─────────────────────────────────────────────────────────
   const LANG_KEY  = 'healthbreak-lang'
@@ -1077,7 +1078,11 @@
   }
   // ────────────────────────────────────────────────────────────────────────
 
-  // ── IPC listeners (registered once) ──────────────────────────────────────
+  // ── IPC listeners (registered once — remove before re-registering to prevent leaks) ──
+  ;['pause-timer', 'popup-closed', 'popup-confirmed', 'popup-skipped', 'oauth-callback'].forEach(ch => {
+    ipcRenderer.removeAllListeners(ch)
+  })
+
   ipcRenderer.on('pause-timer', (event, key) => {
     const r = reminders[key]
     if (r && r.timer) { clearInterval(r.timer); r.timer = null }
@@ -1713,7 +1718,10 @@
       const parsed = parseCallbackUrl(callbackUrl)
       if (!parsed || !_pkceSession) throw new Error('Invalid callback')
       if (parsed.error) throw new Error(`OAuth error: ${parsed.error}`)
-      if (parsed.state !== _pkceSession.state) throw new Error('State mismatch — possible CSRF')
+      // Timing-safe state comparison to prevent timing-based CSRF attacks
+      const a = Buffer.from(parsed.state), b = Buffer.from(_pkceSession.state)
+      const stateOk = a.length === b.length && crypto.timingSafeEqual(a, b)
+      if (!stateOk) throw new Error('State mismatch — possible CSRF')
 
       const tokens = await exchangeCodeForTokens(
         parsed.code,
