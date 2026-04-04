@@ -279,6 +279,12 @@ ipcMain.handle('oauth-start-server', () => {
     }
     const server = http.createServer((req, res) => {
       const url = new URL(req.url, 'http://localhost')
+      // Ignore requests without a code (e.g. favicon.ico)
+      if (!url.searchParams.get('code') && !url.searchParams.get('error')) {
+        res.writeHead(204)
+        res.end()
+        return
+      }
       // Show a closing page to the browser
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
       res.end('<html><body><p>Sign-in complete. You can close this tab.</p><script>window.close()</script></body></html>')
