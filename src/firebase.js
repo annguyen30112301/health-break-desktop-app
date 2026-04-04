@@ -1,60 +1,84 @@
 'use strict';
 
-// ── Firebase initialization ───────────────────────────────────────────────────
-// This module is required from the renderer process (index.html).
-// It initializes Firebase once and exports auth + Firestore instances.
+// ── Firebase IPC proxy ────────────────────────────────────────────────────────
+// Firebase SDK cannot load in Electron renderer — the renderer's module resolver
+// picks ESM builds via the browser field, which cannot be CJS-required.
 //
-// SETUP: copy src/firebase-config.example.js → src/firebase-config.js
-//        and fill in your Firebase project credentials.
+// Solution: Firebase runs in the main process (Node.js, no browser-field issue).
+// All Firebase calls here are proxied over IPC to main.
 // ──────────────────────────────────────────────────────────────────────────────
 
-const { initializeApp, getApps, getApp } = require('firebase/app')
-const { getAuth, GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged } = require('firebase/auth')
-const { getFirestore, doc, getDoc, setDoc, serverTimestamp } = require('firebase/firestore')
+const { ipcRenderer } = require('electron')
 
-let _config
-try {
-  _config = require('./firebase-config.js')
-} catch {
-  // firebase-config.js not set up yet — use placeholder config
-  // The app runs in offline mode until credentials are configured.
-  _config = {
-    firebase: {
-      apiKey: '', authDomain: '', projectId: '',
-      storageBucket: '', messagingSenderId: '', appId: '',
-    },
-    googleClientId: '',
+// Read config synchronously — plain module with no Firebase SDK deps.
+let _cfg = null
+try { _cfg = require('./firebase-config.js') } catch {}
+
+const IS_CONFIGURED    = !!_cfg?.firebase?.apiKey
+const GOOGLE_CLIENT_ID = _cfg?.googleClientId || ''
+
+// Opaque handles passed around in index.html as `auth` / `db`.
+// All operations go through the IPC wrappers below — never inspected directly.
+const auth = Object.freeze({ _proxy: 'auth' })
+const db   = Object.freeze({ _proxy: 'db' })
+
+// ── GoogleAuthProvider shim ───────────────────────────────────────────────────
+const GoogleAuthProvider = {
+  credential(idToken, accessToken) {
+    return { _googleCredential: true, idToken, accessToken }
+  },
+}
+
+// ── Auth operations ───────────────────────────────────────────────────────────
+
+// Returns { uid, email } — use this instead of auth.currentUser after sign-in.
+async function signInWithCredential(_auth, credential) {
+  return ipcRenderer.invoke('firebase-sign-in', {
+    idToken:     credential.idToken,
+    accessToken: credential.accessToken,
+  })
+}
+
+async function signOut(_auth) {
+  return ipcRenderer.invoke('firebase-sign-out')
+}
+
+// Mirrors Firebase's onAuthStateChanged: callback receives user ({ uid, email }) or null.
+// Main process pushes auth state via 'firebase-auth-state' IPC event.
+function onAuthStateChanged(_auth, callback) {
+  ipcRenderer.on('firebase-auth-state', (_event, user) => callback(user))
+  return () => ipcRenderer.removeAllListeners('firebase-auth-state')
+}
+
+// ── Firestore operations ──────────────────────────────────────────────────────
+
+function doc(_db, ...segments) {
+  return { _proxy: 'doc-ref', path: segments.join('/') }
+}
+
+async function getDoc(ref) {
+  const data = await ipcRenderer.invoke('firebase-get-doc', { path: ref.path })
+  return {
+    exists: () => data !== null && data !== undefined,
+    data:   () => data,
   }
 }
 
-const FIREBASE_CONFIG    = _config.firebase
-const GOOGLE_CLIENT_ID   = _config.googleClientId
-const IS_CONFIGURED      = !!FIREBASE_CONFIG.apiKey
-
-// Initialize Firebase (guard against double-init across hot reloads)
-let firebaseApp
-try {
-  firebaseApp = getApp()
-} catch {
-  if (IS_CONFIGURED) {
-    firebaseApp = initializeApp(FIREBASE_CONFIG)
-  }
+async function setDoc(ref, data, options) {
+  return ipcRenderer.invoke('firebase-set-doc', {
+    path:  ref.path,
+    data,
+    merge: !!(options && options.merge),
+  })
 }
 
-const auth = IS_CONFIGURED ? getAuth(firebaseApp) : null
-const db   = IS_CONFIGURED ? getFirestore(firebaseApp) : null
+// Returns a sentinel replaced by FieldValue.serverTimestamp() in main process.
+function serverTimestamp() {
+  return { __serverTimestamp: true }
+}
 
 module.exports = {
-  auth,
-  db,
-  IS_CONFIGURED,
-  GOOGLE_CLIENT_ID,
-  GoogleAuthProvider,
-  signInWithCredential,
-  signOut,
-  onAuthStateChanged,
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp,
+  auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID,
+  GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
+  doc, getDoc, setDoc, serverTimestamp,
 }

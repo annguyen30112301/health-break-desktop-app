@@ -1621,14 +1621,14 @@
       _pkceSession = null
 
       // Sign in to Firebase with the Google credential
-      const credential = GoogleAuthProvider.credential(tokens.id_token, tokens.access_token)
-      await signInWithCredential(auth, credential)
+      const credential  = GoogleAuthProvider.credential(tokens.id_token, tokens.access_token)
+      const signedUser  = await signInWithCredential(auth, credential)
 
       // Persist refresh token encrypted
       if (tokens.refresh_token) {
         await ipcRenderer.invoke('safe-storage-set', JSON.stringify({
           refreshToken: tokens.refresh_token,
-          uid: auth.currentUser?.uid,
+          uid: signedUser?.uid,
         }))
       }
 

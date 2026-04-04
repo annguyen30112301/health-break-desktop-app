@@ -79,6 +79,16 @@ function createWindow() {
   })
 
   mainWindow.loadFile('index.html')
+
+  // Send current Firebase auth state once renderer is ready.
+  // Handles the case where onAuthStateChanged in main fires before the renderer registers its listener.
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (_fbCurrentUser !== undefined) {
+      mainWindow.webContents.send('firebase-auth-state', _serializeUser(_fbCurrentUser))
+    }
+    // If still undefined, onAuthStateChanged will send when Firebase initializes.
+  })
+
   // Nếu khởi động tự động → ẩn cửa sổ, chỉ chạy nền
   if (process.argv.includes('--hidden')) {
     mainWindow.once('ready-to-show', () => mainWindow.hide())
@@ -295,6 +305,83 @@ ipcMain.handle('safe-storage-delete', () => {
     return false
   }
 })
+// ── Firebase (main process) ───────────────────────────────────────────────────
+// Firebase SDK works reliably in the main process (pure Node.js, no browser-field
+// resolution issue). All renderer calls are proxied here via IPC.
+
+let _fbCurrentUser = undefined   // undefined = not yet determined, null = no user
+
+function _serializeUser(user) {
+  if (!user) return null
+  return { uid: user.uid, email: user.email }
+}
+
+// Recursively replace { __serverTimestamp: true } sentinels with FieldValue.serverTimestamp()
+function _replaceSentinels(data, serverTimestamp) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data
+  const out = {}
+  for (const [k, v] of Object.entries(data)) {
+    out[k] = (v && typeof v === 'object' && v.__serverTimestamp)
+      ? serverTimestamp()
+      : _replaceSentinels(v, serverTimestamp)
+  }
+  return out
+}
+
+try {
+  const { initializeApp, getApps, getApp } = require('firebase/app')
+  const {
+    getAuth, GoogleAuthProvider,
+    signInWithCredential: fbSignIn,
+    signOut: fbSignOut,
+    onAuthStateChanged,
+  } = require('firebase/auth')
+  const { getFirestore, doc, getDoc, setDoc, serverTimestamp } = require('firebase/firestore')
+  const _fbCfg = require('./src/firebase-config.js')
+
+  const fbApp  = getApps().length ? getApp() : initializeApp(_fbCfg.firebase)
+  const fbAuth = getAuth(fbApp)
+  const fbDb   = getFirestore(fbApp)
+
+  // Push auth state to renderer whenever it changes.
+  // 'did-finish-load' in createWindow() handles the case where Firebase fires before the renderer is ready.
+  onAuthStateChanged(fbAuth, (user) => {
+    _fbCurrentUser = user
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('firebase-auth-state', _serializeUser(user))
+    }
+  })
+
+  ipcMain.handle('firebase-sign-in', async (_event, { idToken, accessToken }) => {
+    const cred = GoogleAuthProvider.credential(idToken, accessToken)
+    const uc   = await fbSignIn(fbAuth, cred)
+    return _serializeUser(uc.user)
+  })
+
+  ipcMain.handle('firebase-sign-out', async () => {
+    await fbSignOut(fbAuth)
+  })
+
+  ipcMain.handle('firebase-get-doc', async (_event, { path }) => {
+    const ref  = doc(fbDb, ...path.split('/'))
+    const snap = await getDoc(ref)
+    return snap.exists() ? snap.data() : null
+  })
+
+  ipcMain.handle('firebase-set-doc', async (_event, { path, data, merge }) => {
+    const ref     = doc(fbDb, ...path.split('/'))
+    const cleaned = _replaceSentinels(data, serverTimestamp)
+    await setDoc(ref, cleaned, merge ? { merge: true } : undefined)
+  })
+
+} catch (e) {
+  console.error('Firebase main-process init failed:', e)
+  _fbCurrentUser = null
+  // Stub handlers so renderer invoke() calls don't hang
+  ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc'].forEach(ch => {
+    try { ipcMain.handle(ch, () => null) } catch {}
+  })
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
