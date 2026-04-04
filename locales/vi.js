@@ -142,8 +142,12 @@ module.exports = {
     startBtn:   'Bắt đầu →',
     step2Title: 'Thiết lập mục tiêu uống nước',
     step2Desc:  'Nhập thông tin cơ thể để tính lượng nước phù hợp nhất cho bạn mỗi ngày.',
-    applyBtn:   '✓ Áp dụng & Bắt đầu',
-    skipBtn:    'Bỏ qua — tôi sẽ thiết lập sau',
+    applyBtn:    '✓ Áp dụng & Tiếp tục',
+    skipBtn:     'Bỏ qua — tôi sẽ thiết lập sau',
+    step3Title:  'Quyền riêng tư & Đồng bộ đám mây',
+    step3Desc:   'HealthBreak mặc định hoạt động hoàn toàn ngoại tuyến.\n\nNếu bạn đăng nhập Google, cài đặt sẽ được đồng bộ lên đám mây để khôi phục trên bất kỳ thiết bị nào. Chúng tôi lưu:\n• Khoảng thời gian và tuỳ chọn nhắc nhở của bạn\n• Lịch sử xác nhận/bỏ qua hàng ngày (30 ngày gần nhất)\n\nChúng tôi không chia sẻ dữ liệu với bên thứ ba.',
+    privacyOk:   'Đã hiểu — bắt đầu thôi!',
+    privacySkip: 'Bắt đầu mà không cần đăng nhập',
   },
 
   waterGoal: {
@@ -185,5 +189,34 @@ module.exports = {
 
     syncOk:         'Đã đồng bộ ✓',
     syncError:      'Lỗi đồng bộ — đã lưu cục bộ',
+  },
+
+  account: {
+    cardName:     'Tài khoản',
+    email:        (email) => email,
+    joined:       (date) => `Ngày tham gia: ${date}`,
+    btnDelete:    'Xoá tài khoản',
+    deleteTitle:  'Xoá tài khoản?',
+    deleteDesc:   'Toàn bộ dữ liệu Firestore của bạn sẽ bị xoá vĩnh viễn và bạn sẽ bị đăng xuất. Không thể hoàn tác.',
+    deleteConfirm:'Xoá vĩnh viễn',
+    deleteCancel: 'Huỷ',
+    deleting:     'Đang xoá…',
+    deleteOk:     'Đã xoá tài khoản.',
+    deleteError:  'Xoá thất bại. Vui lòng thử lại.',
+  },
+
+  feedback: {
+    cardName:     'Gửi phản hồi',
+    cardDesc:     'Giúp chúng tôi cải thiện HealthBreak',
+    btnOpen:      'Viết phản hồi',
+    dialogTitle:  'Gửi phản hồi',
+    dialogDesc:   'Chia sẻ ý kiến của bạn (1–500 ký tự)',
+    btnSend:      'Gửi',
+    btnCancel:    'Huỷ',
+    sending:      'Đang gửi…',
+    sent:         'Đã gửi phản hồi — cảm ơn bạn!',
+    tooShort:     'Vui lòng nhập ít nhất 1 ký tự.',
+    tooLong:      'Phản hồi không được vượt quá 500 ký tự.',
+    error:        'Gửi thất bại. Vui lòng thử lại.',
   },
 };

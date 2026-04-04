@@ -142,8 +142,12 @@ module.exports = {
     startBtn:   'Get Started →',
     step2Title: 'Set your daily water goal',
     step2Desc:  'Enter your measurements and we\'ll calculate the right amount of water for your body.',
-    applyBtn:   '✓ Set Goal & Start',
-    skipBtn:    'Skip — I\'ll set it up later',
+    applyBtn:    '✓ Set Goal & Continue',
+    skipBtn:     'Skip — I\'ll set it up later',
+    step3Title:  'Privacy & Cloud Sync',
+    step3Desc:   'HealthBreak works entirely offline by default.\n\nIf you sign in with Google, your settings are synced to the cloud so you can restore them on any device. We store:\n• Your reminder intervals and preferences\n• Daily confirm/skip history (last 30 days)\n\nWe never share your data with third parties.',
+    privacyOk:   'Got it — let\'s start!',
+    privacySkip: 'Start without signing in',
   },
 
   waterGoal: {
@@ -185,5 +189,34 @@ module.exports = {
 
     syncOk:         'Settings synced ✓',
     syncError:      'Sync error — changes saved locally',
+  },
+
+  account: {
+    cardName:     'Account',
+    email:        (email) => email,
+    joined:       (date) => `Joined ${date}`,
+    btnDelete:    'Delete account',
+    deleteTitle:  'Delete account?',
+    deleteDesc:   'This will permanently delete your Firestore data and sign you out. This cannot be undone.',
+    deleteConfirm:'Delete permanently',
+    deleteCancel: 'Cancel',
+    deleting:     'Deleting…',
+    deleteOk:     'Account deleted.',
+    deleteError:  'Delete failed. Please try again.',
+  },
+
+  feedback: {
+    cardName:     'Send Feedback',
+    cardDesc:     'Help us improve HealthBreak',
+    btnOpen:      'Write feedback',
+    dialogTitle:  'Send Feedback',
+    dialogDesc:   'Tell us what you think (1–500 characters)',
+    btnSend:      'Send',
+    btnCancel:    'Cancel',
+    sending:      'Sending…',
+    sent:         'Feedback sent — thank you!',
+    tooShort:     'Please write at least 1 character.',
+    tooLong:      'Feedback must be 500 characters or fewer.',
+    error:        'Failed to send. Please try again.',
   },
 };

@@ -383,8 +383,9 @@ try {
     signInWithCredential: fbSignIn,
     signOut: fbSignOut,
     onAuthStateChanged,
+    deleteUser,
   } = require('firebase/auth')
-  const { getFirestore, doc, getDoc, setDoc, serverTimestamp } = require('firebase/firestore')
+  const { getFirestore, doc, getDoc, setDoc, serverTimestamp, increment, addDoc, collection, getDocs, deleteDoc, writeBatch } = require('firebase/firestore')
   const _fbCfg = require('./src/firebase-config.js')
 
   const fbApp  = getApps().length ? getApp() : initializeApp(_fbCfg.firebase)
@@ -422,11 +423,56 @@ try {
     await setDoc(ref, cleaned, merge ? { merge: true } : undefined)
   })
 
+  ipcMain.handle('firebase-sync-history', async (_event, { uid, entry }) => {
+    const ref = doc(fbDb, 'users', uid, 'history', entry.date)
+    await setDoc(ref, { ...entry, updatedAt: serverTimestamp() }, { merge: true })
+  })
+
+  // analytics/daily/{date}: aggregate confirms + skips across all users
+  // dau = distinct active users (incremented once per user per day via merge)
+  ipcMain.handle('firebase-analytics-agg', async (_event, { date, key, type }) => {
+    const ref = doc(fbDb, 'analytics', 'daily', date, key)
+    const field = type === 'confirm' ? 'confirms' : 'skips'
+    await setDoc(ref, {
+      [field]:    increment(1),
+      updatedAt:  serverTimestamp(),
+    }, { merge: true })
+    // Mark DAU: one write per uid per day using Firebase uid (merge prevents double-counting)
+    const dauUid = _fbCurrentUser?.uid
+    if (dauUid) {
+      const dauRef = doc(fbDb, 'analytics', 'dau', date, dauUid)
+      await setDoc(dauRef, { ts: serverTimestamp() }, { merge: true })
+    }
+  })
+
+  ipcMain.handle('firebase-delete-account', async () => {
+    const user = _fbCurrentUser
+    if (!user) throw new Error('Not signed in')
+    const uid = user.uid
+    // Delete all user subcollections: settings, history
+    const batch = writeBatch(fbDb)
+    for (const sub of ['settings', 'history']) {
+      const snap = await getDocs(collection(fbDb, 'users', uid, sub))
+      snap.forEach(d => batch.delete(d.ref))
+    }
+    batch.delete(doc(fbDb, 'users', uid))
+    await batch.commit()
+    // Delete Firebase Auth account (must be after Firestore cleanup)
+    await deleteUser(fbAuth.currentUser)
+  })
+
+  ipcMain.handle('firebase-submit-feedback', async (_event, { uid, text, appVersion, lang, platform }) => {
+    await addDoc(collection(fbDb, 'feedback'), {
+      uid, text, appVersion, lang, platform,
+      createdAt: serverTimestamp(),
+    })
+  })
+
 } catch (e) {
   console.error('Firebase main-process init failed:', e)
   _fbCurrentUser = null
   // Stub handlers so renderer invoke() calls don't hang
-  ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc'].forEach(ch => {
+  ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc', 'firebase-sync-history', 'firebase-analytics-agg', 'firebase-submit-feedback', 'firebase-delete-account'].forEach(ch => {
     try { ipcMain.handle(ch, () => null) } catch {}
   })
 }
