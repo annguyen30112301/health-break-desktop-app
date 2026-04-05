@@ -101,6 +101,92 @@
     .testing-badge .btn-clear-cache:hover { background: #ffebee; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+    /* ── Update banner ───────────────────────────────────────────── */
+    #update-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: #2e7d32;
+    }
+    #update-banner.visible { display: flex; }
+    #update-banner .update-icon { font-size: 18px; flex-shrink: 0; }
+    #update-banner .update-text { flex: 1; font-weight: 600; }
+    #update-banner .update-subtext { font-size: 11px; font-weight: 400; color: #4caf50; }
+    .btn-update-install {
+      background: #4CAF50; color: white;
+      border: none; border-radius: 7px;
+      padding: 5px 12px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s; flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .btn-update-install:hover { background: #43A047; }
+    .btn-update-install:disabled { background: #a5d6a7; cursor: default; }
+    .btn-update-dismiss {
+      background: none; border: none;
+      color: #81c784; font-size: 16px; cursor: pointer; flex-shrink: 0; line-height: 1;
+    }
+    .btn-update-dismiss:hover { color: #2e7d32; }
+
+    /* ── Gear button ─────────────────────────────────────────────── */
+    .btn-gear {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 14px;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #888;
+    }
+    .btn-gear:hover  { border-color: #4CAF50; color: #4CAF50; }
+    .btn-gear.active { background: #f0faf0; border-color: #4CAF50; color: #4CAF50; }
+
+    /* ── Settings panel (overlay) ────────────────────────────────── */
+    #settings-panel {
+      position: fixed;
+      inset: 0;
+      background: #f8f8f6;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.22s ease;
+      padding: 16px 24px 24px;
+      overflow-y: auto;
+    }
+    #settings-panel.open { transform: translateX(0); }
+    .settings-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .btn-settings-back {
+      background: none;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-settings-back:hover { border-color: #4CAF50; color: #4CAF50; }
+    .settings-panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+      flex: 1;
+    }
+    #settings-panel .card { margin-bottom: 10px; }
+
     /* ── Cards ───────────────────────────────────────────────────── */
     .card {
       background: white;
@@ -567,6 +653,7 @@
     <button id="btn-lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
     <button id="btn-lang-vi" class="lang-btn" onclick="setLanguage('vi')">VI</button>
     <button class="btn-stats" id="btn-stats" onclick="openDashboard()"></button>
+    <button class="btn-gear" id="btn-gear" onclick="openSettingsPanel()" title="Settings">⚙</button>
     <div id="header-avatar" style="display:none; width:28px; height:28px; border-radius:50%; background:#4CAF50; color:white; font-size:13px; font-weight:700; align-items:center; justify-content:center; cursor:default;" title=""></div>
   </div>
 </div>
@@ -676,47 +763,66 @@
   </div>
 </div>
 
-<!-- ── Auto-launch ──────────────────────────────────────────────────────── -->
-<div class="card" style="margin-bottom: 12px;">
-  <div class="card-top">
-    <div class="card-icon">⚙️</div>
-    <div class="card-name" id="autolaunch-name"></div>
-    <div class="toggle" id="toggle-autolaunch" onclick="toggleAutoLaunch()"></div>
+<!-- ── Update banner ─────────────────────────────────────────────────────── -->
+<div id="update-banner">
+  <div class="update-icon">🔄</div>
+  <div class="update-text">
+    <div id="update-banner-title"></div>
+    <div class="update-subtext" id="update-banner-sub"></div>
   </div>
-  <div class="card-desc" id="autolaunch-desc"></div>
+  <button class="btn-update-install" id="btn-update-install" onclick="handleUpdateInstall()"></button>
+  <button class="btn-update-dismiss" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
 </div>
 
-<!-- ── Cloud Sync ─────────────────────────────────────────────────────────── -->
-<div class="card" id="card-auth" style="margin-bottom: 12px;">
-  <div class="card-top">
-    <div class="card-icon">☁️</div>
-    <div class="card-name" id="auth-card-name"></div>
-    <div class="auth-badge offline" id="auth-badge"></div>
-    <button class="btn-auth" id="btn-auth" onclick="handleAuthClick()"></button>
+<!-- ── Settings panel (overlay) ───────────────────────────────────────────── -->
+<div id="settings-panel">
+  <div class="settings-panel-header">
+    <button class="btn-settings-back" onclick="closeSettingsPanel()">← <span id="settings-back-label"></span></button>
+    <div class="settings-panel-title" id="settings-panel-title"></div>
   </div>
-  <div class="card-desc" id="auth-card-desc"></div>
-</div>
 
-<!-- ── Account ────────────────────────────────────────────────────────────── -->
-<div class="card" id="card-account" style="display:none; margin-bottom: 12px;">
-  <div class="card-top">
-    <div class="card-icon">👤</div>
-    <div class="card-name" id="account-card-name"></div>
+  <!-- Auto-launch -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-icon">🚀</div>
+      <div class="card-name" id="autolaunch-name"></div>
+      <div class="toggle" id="toggle-autolaunch" onclick="toggleAutoLaunch()"></div>
+    </div>
+    <div class="card-desc" id="autolaunch-desc"></div>
   </div>
-  <div class="card-desc" id="account-card-email" style="margin-bottom:4px;"></div>
-  <div class="card-desc" id="account-card-joined" style="color:#aaa; font-size:12px; margin-bottom:8px;"></div>
-  <button id="btn-account-delete" onclick="openDeleteDialog()"
-    style="font-size:12px;color:#e53935;background:none;border:1px solid #e53935;border-radius:6px;padding:4px 12px;cursor:pointer;"></button>
-</div>
 
-<!-- ── Feedback ───────────────────────────────────────────────────────────── -->
-<div class="card" id="card-feedback" style="display:none; margin-bottom: 12px;">
-  <div class="card-top">
-    <div class="card-icon">💬</div>
-    <div class="card-name" id="feedback-card-name"></div>
-    <button class="btn-edit" id="btn-feedback-open" onclick="openFeedbackDialog()"></button>
+  <!-- Cloud Sync -->
+  <div class="card" id="card-auth">
+    <div class="card-top">
+      <div class="card-icon">☁️</div>
+      <div class="card-name" id="auth-card-name"></div>
+      <div class="auth-badge offline" id="auth-badge"></div>
+      <button class="btn-auth" id="btn-auth" onclick="handleAuthClick()"></button>
+    </div>
+    <div class="card-desc" id="auth-card-desc"></div>
   </div>
-  <div class="card-desc" id="feedback-card-desc"></div>
+
+  <!-- Account -->
+  <div class="card" id="card-account" style="display:none;">
+    <div class="card-top">
+      <div class="card-icon">👤</div>
+      <div class="card-name" id="account-card-name"></div>
+    </div>
+    <div class="card-desc" id="account-card-email" style="margin-bottom:4px;"></div>
+    <div class="card-desc" id="account-card-joined" style="color:#aaa; font-size:12px; margin-bottom:8px;"></div>
+    <button id="btn-account-delete" onclick="openDeleteDialog()"
+      style="font-size:12px;color:#e53935;background:none;border:1px solid #e53935;border-radius:6px;padding:4px 12px;cursor:pointer;"></button>
+  </div>
+
+  <!-- Feedback -->
+  <div class="card" id="card-feedback" style="display:none;">
+    <div class="card-top">
+      <div class="card-icon">💬</div>
+      <div class="card-name" id="feedback-card-name"></div>
+      <button class="btn-edit" id="btn-feedback-open" onclick="openFeedbackDialog()"></button>
+    </div>
+    <div class="card-desc" id="feedback-card-desc"></div>
+  </div>
 </div>
 
 <div class="status-bar" id="status"></div>
@@ -940,6 +1046,14 @@
     // Update onboarding texts if overlay is visible
     const _overlay = document.getElementById('onboarding-overlay')
     if (_overlay && _overlay.style.display !== 'none') applyOnboardingLocale()
+
+    // Settings panel
+    document.getElementById('settings-panel-title').textContent = locale.settings.sectionLabel
+    document.getElementById('settings-back-label').textContent  = locale.settings.back
+
+    // Update button inside banner
+    const btnInst = document.getElementById('btn-update-install')
+    if (btnInst && !btnInst.disabled) btnInst.textContent = locale.update.installBtn
 
     // Update auth card + dialog strings
     if (typeof applyAuthLocale === 'function') applyAuthLocale()
@@ -2082,6 +2196,68 @@
       syncSettingsToFirestore(currentUser.uid).catch(console.error)
     }
   }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Settings panel ────────────────────────────────────────────────────────
+  function openSettingsPanel() {
+    document.getElementById('settings-panel').classList.add('open')
+    document.getElementById('btn-gear').classList.add('active')
+  }
+
+  function closeSettingsPanel() {
+    document.getElementById('settings-panel').classList.remove('open')
+    document.getElementById('btn-gear').classList.remove('active')
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Auto-updater ──────────────────────────────────────────────────────────
+  let _updateReady = false
+
+  function showUpdateBanner(title, sub, btnLabel, ready) {
+    _updateReady = ready
+    document.getElementById('update-banner-title').textContent = title
+    document.getElementById('update-banner-sub').textContent   = sub
+    const btn = document.getElementById('btn-update-install')
+    btn.textContent = btnLabel
+    btn.disabled    = !ready
+    document.getElementById('update-banner').classList.add('visible')
+  }
+
+  function dismissUpdateBanner() {
+    document.getElementById('update-banner').classList.remove('visible')
+  }
+
+  function handleUpdateInstall() {
+    if (!_updateReady) return
+    ipcRenderer.send('install-update')
+  }
+
+  ipcRenderer.on('update-available', (_, info) => {
+    const loc = locale.update
+    showUpdateBanner(
+      loc.available(info.version),
+      loc.downloading,
+      loc.installBtn,
+      false
+    )
+  })
+
+  ipcRenderer.on('update-progress', (_, pct) => {
+    const loc = locale.update
+    const btn = document.getElementById('btn-update-install')
+    if (btn) btn.textContent = `${Math.round(pct)}%`
+    document.getElementById('update-banner-sub').textContent = loc.downloadingPct(Math.round(pct))
+  })
+
+  ipcRenderer.on('update-downloaded', (_, info) => {
+    const loc = locale.update
+    showUpdateBanner(
+      loc.ready(info.version),
+      loc.readySub,
+      loc.installBtn,
+      true
+    )
+  })
   // ────────────────────────────────────────────────────────────────────────
 
   // ── Bootstrap ─────────────────────────────────────────────────────────────

@@ -205,6 +205,20 @@ module.exports = {
     deleteError:  'Xoá thất bại. Vui lòng thử lại.',
   },
 
+  settings: {
+    sectionLabel: 'Cài đặt',
+    back:         'Quay lại',
+  },
+
+  update: {
+    available:      (v) => `Có phiên bản mới — v${v}`,
+    downloading:    'Đang tải về nền…',
+    downloadingPct: (p) => `Đang tải… ${p}%`,
+    ready:          (v) => `v${v} đã sẵn sàng cài đặt`,
+    readySub:       'Khởi động lại ứng dụng để áp dụng bản cập nhật',
+    installBtn:     'Khởi động lại & Cập nhật',
+  },
+
   feedback: {
     cardName:     'Gửi phản hồi',
     cardDesc:     'Giúp chúng tôi cải thiện HealthBreak',

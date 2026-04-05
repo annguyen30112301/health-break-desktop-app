@@ -1,6 +1,6 @@
 {
   "name": "healthbreak",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Periodic health reminders — drink water, light exercise, eye rest",
   "main": "main.js",
   "scripts": {
@@ -10,6 +10,7 @@
     "build:win": "npm test && npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
     "build:win:dir": "npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win dir",
     "build:mac": "electron-builder --mac",
+    "build:mac:notarize": "APPLE_ID=$APPLE_ID APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID=$APPLE_TEAM_ID electron-builder --mac",
     "build": "electron-builder"
   },
   "keywords": [],
@@ -17,6 +18,7 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "cross-env": "^7.0.3",
     "electron": "^41.1.1",
     "electron-builder": "^25.1.8",
@@ -50,7 +52,9 @@
     "protocols": [
       {
         "name": "HealthBreak OAuth",
-        "schemes": ["healthbreak"]
+        "schemes": [
+          "healthbreak"
+        ]
       }
     ],
     "win": {
@@ -82,13 +86,26 @@
         }
       ],
       "icon": "app-icon.png",
-      "category": "public.app-category.healthcare-fitness"
+      "category": "public.app-category.healthcare-fitness",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
+    "afterSign": "scripts/notarize.js",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "royan-nguyen",
+        "repo": "health-break-desktop-app"
+      }
+    ],
     "dmg": {
       "title": "HealthBreak ${version}"
     }
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "firebase": "^12.11.0"
   }
 }

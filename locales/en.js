@@ -205,6 +205,20 @@ module.exports = {
     deleteError:  'Delete failed. Please try again.',
   },
 
+  settings: {
+    sectionLabel: 'Settings',
+    back:         'Back',
+  },
+
+  update: {
+    available:      (v) => `Update available — v${v}`,
+    downloading:    'Downloading in background…',
+    downloadingPct: (p) => `Downloading… ${p}%`,
+    ready:          (v) => `v${v} ready to install`,
+    readySub:       'Restart the app to apply the update',
+    installBtn:     'Restart & Update',
+  },
+
   feedback: {
     cardName:     'Send Feedback',
     cardDesc:     'Help us improve HealthBreak',

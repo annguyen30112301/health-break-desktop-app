@@ -3,6 +3,7 @@ const path = require('path')
 const os   = require('os')
 const fs   = require('fs')
 const http = require('http')
+const { autoUpdater } = require('electron-updater')
 
 app.setName('HealthBreak')
 
@@ -480,9 +481,48 @@ try {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Auto-updater ──────────────────────────────────────────────────────────────
+function setupAutoUpdater() {
+  // Only run in packaged app — skip in dev (electron .)
+  if (!app.isPackaged) return
+
+  autoUpdater.autoDownload    = true   // download silently in background
+  autoUpdater.autoInstallOnAppQuit = false  // we control when to install
+
+  autoUpdater.on('update-available', (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-available', { version: info.version })
+    }
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-progress', progress.percent)
+    }
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-downloaded', { version: info.version })
+    }
+  })
+
+  // Check on startup, then every 4 hours
+  autoUpdater.checkForUpdates().catch(e => console.warn('Update check failed:', e))
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(e => console.warn('Update check failed:', e))
+  }, 4 * 60 * 60 * 1000)
+}
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall(false, true)
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.whenReady().then(() => {
   createWindow()
   createTray()
+  setupAutoUpdater()
 
   // Check if launched via protocol URL (Windows — URL may be in argv)
   const protoUrl = process.argv.find(arg => arg.startsWith(`${PROTOCOL}://`))

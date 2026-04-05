@@ -157,6 +157,34 @@ Unit tests run automatically before every build (`npm test` is prepended to `bui
 | 15.25 | Online polish | Avatar hidden when not signed in | Not signed in | View header | Avatar not visible | E2E |
 | 15.26 | Online polish | Avatar updates immediately on sign-in | Not signed in → sign in | Complete OAuth | Avatar appears without page reload | E2E |
 
+| **SETTINGS PANEL** _(Hotfix v1.1.1)_ ||||||||
+| 16.1 | Settings panel | Gear button visible in header next to Stats | App loaded | View header | ⚙ button present, not highlighted | E2E |
+| 16.2 | Settings panel | Click gear opens settings panel | Panel closed | Click ⚙ | Panel slides in from right, gear button highlighted | E2E |
+| 16.3 | Settings panel | Panel shows all 4 settings items | Panel open | View panel | Auto-launch toggle, Cloud Sync, Account (if signed in), Feedback (if signed in) | E2E |
+| 16.4 | Settings panel | Back button closes panel | Panel open | Click ← Back / ← Quay lại | Panel slides out, gear button un-highlights | E2E |
+| 16.5 | Settings panel | Auto-launch toggle works inside panel | Panel open | Click auto-launch toggle | Toggle state changes, IPC sent to main | E2E |
+| 16.6 | Settings panel | Cloud Sync sign-in button works inside panel | Panel open, not signed in | Click Sign in | OAuth flow starts | E2E |
+| 16.7 | Settings panel | Account + Feedback cards hidden when not signed in | Not signed in, panel open | View panel | Only auto-launch and cloud sync cards shown | E2E |
+| 16.8 | Settings panel | Account + Feedback cards appear after sign-in | Sign in while panel open | Complete OAuth | Cards become visible without reopening panel | E2E |
+| 16.9 | Settings panel | Panel text updates on language switch | Panel open | Switch EN ↔ VI | All panel labels update | E2E |
+| 16.10 | Settings panel | Panel title correct per language | Panel open in EN / VI | View panel title | EN: "Settings" · VI: "Cài đặt" | E2E |
+| **AUTO-UPDATE** _(Hotfix v1.1.1)_ ||||||||
+| 17.1 | Auto-update | No update banner on fresh launch (current version) | Packaged app, no newer release | Launch app | Update banner not visible | E2E |
+| 17.2 | Auto-update | Update banner appears when new version available | Newer release on GitHub | Launch app (packaged) | Green banner shows "Update available — vX.X.X" | E2E |
+| 17.3 | Auto-update | Banner shows download progress | Update downloading | Watch banner | Sub-text shows "Downloading… N%" | E2E |
+| 17.4 | Auto-update | Install button disabled while downloading | Download in progress | View install button | Button disabled, shows % | E2E |
+| 17.5 | Auto-update | Banner updates to "ready" after download completes | Download complete | Watch banner | Title shows "vX.X.X ready to install", button enabled | E2E |
+| 17.6 | Auto-update | Install button triggers restart | Update downloaded, click Install | Click "Restart & Update" | App quits and relaunches with new version | E2E |
+| 17.7 | Auto-update | Dismiss (✕) hides banner | Banner visible | Click ✕ | Banner hidden | E2E |
+| 17.8 | Auto-update | Update check skipped in dev mode | Run via `npm start` | Launch | No update check triggered (isPackaged = false) | E2E |
+| 17.9 | Auto-update | Update banner text in Vietnamese | App in VI, update available | View banner | Banner text in Vietnamese | E2E |
+| **MACOS NOTARIZATION** _(Hotfix v1.1.1)_ ||||||||
+| 18.1 | macOS build | App opens without quarantine error when notarized | Build with APPLE_ID + APPLE_TEAM_ID set | Install DMG, launch app | App opens normally, no "damaged" or "unidentified developer" dialog | E2E |
+| 18.2 | macOS build | `install-mac.command` removes quarantine | Non-notarized build | Double-click install-mac.command after install | App opens normally after script runs | E2E |
+| 18.3 | macOS build | Hardened runtime enabled in built binary | Run `codesign -dv` on app | Build with `build:mac` | Output includes `hardened-runtime=1` | E2E |
+| 18.4 | macOS build | Notarize step skipped when env vars absent | Build without APPLE_ID env | Run `build:mac` | Build completes, console shows "Notarization skipped" | E2E |
+| 18.5 | macOS build | Notarize step runs when env vars present | APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID set | Run `build:mac:notarize` | Console shows "Notarizing…" and "Notarization complete." | E2E |
+
 ---
 
 ## Automated unit tests (Jest)

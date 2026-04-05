@@ -4,6 +4,29 @@ All notable changes to HealthBreak will be documented in this file.
 
 ---
 
+## [1.1.1] - 2026-04-05
+
+### Hotfix
+
+#### Settings Panel
+- **Gear button (⚙)** added to header next to Stats button — opens a dedicated Settings panel
+- Settings panel slides in from the right, contains: Auto-launch, Cloud Sync, Account, Feedback
+- Replaced the previous collapsible section below reminder cards
+
+#### Auto-Update
+- **Automatic update checking** via `electron-updater` — checks on launch and every 4 hours (packaged builds only)
+- Update available → **green banner** appears with download progress
+- Once downloaded → **"Restart & Update"** button applies the new version instantly
+- Fully localized (EN/VI)
+
+#### macOS Gatekeeper Fix
+- `hardenedRuntime: true` + entitlements plist added to macOS build config — required for notarization
+- `scripts/notarize.js` — afterSign hook auto-notarizes when `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` env vars are set
+- `scripts/install-mac.command` — helper script users can double-click to remove quarantine on non-notarized builds
+- New `build:mac:notarize` npm script for notarized production builds
+
+---
+
 ## [1.1.0] - 2026-04-04
 
 ### New Features
