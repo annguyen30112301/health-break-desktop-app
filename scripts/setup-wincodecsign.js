@@ -14,6 +14,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// winCodeSign is only needed for code signing on Windows.
+// Cross-compiling from macOS/Linux skips signing (CSC_IDENTITY_AUTO_DISCOVERY=false),
+// so the cache setup is unnecessary and would fail without PowerShell.
+if (process.platform !== 'win32') {
+  console.log('Not on Windows — winCodeSign setup skipped.');
+  process.exit(0);
+}
+
 const VERSION = '2.6.0';
 const DOWNLOAD_URL = `https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-${VERSION}/winCodeSign-${VERSION}.7z`;
 const CACHE_ROOT = path.join(os.homedir(), 'AppData', 'Local', 'electron-builder', 'Cache', 'winCodeSign');
