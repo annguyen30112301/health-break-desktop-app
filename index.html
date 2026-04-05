@@ -763,17 +763,6 @@
   </div>
 </div>
 
-<!-- ── Update banner ─────────────────────────────────────────────────────── -->
-<div id="update-banner">
-  <div class="update-icon">🔄</div>
-  <div class="update-text">
-    <div id="update-banner-title"></div>
-    <div class="update-subtext" id="update-banner-sub"></div>
-  </div>
-  <button class="btn-update-install" id="btn-update-install" onclick="handleUpdateInstall()"></button>
-  <button class="btn-update-dismiss" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
-</div>
-
 <!-- ── Settings panel (overlay) ───────────────────────────────────────────── -->
 <div id="settings-panel">
   <div class="settings-panel-header">
@@ -836,6 +825,17 @@
       <button id="btn-check-update" onclick="checkForUpdates()"
         style="font-size:11px;color:#4CAF50;background:none;border:1px solid #4CAF50;border-radius:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;"></button>
     </div>
+  </div>
+
+  <!-- Update banner -->
+  <div id="update-banner">
+    <div class="update-icon">🔄</div>
+    <div class="update-text">
+      <div id="update-banner-title"></div>
+      <div class="update-subtext" id="update-banner-sub"></div>
+    </div>
+    <button class="btn-update-install" id="btn-update-install" onclick="handleUpdateInstall()"></button>
+    <button class="btn-update-dismiss" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
   </div>
 </div>
 
