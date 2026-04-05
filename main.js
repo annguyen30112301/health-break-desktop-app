@@ -495,7 +495,7 @@ function setupAutoUpdater() {
   // Only run in packaged app — skip in dev (electron .)
   if (!app.isPackaged) return
 
-  autoUpdater.autoDownload    = true   // download silently in background
+  autoUpdater.autoDownload    = false  // user triggers download manually
   autoUpdater.autoInstallOnAppQuit = false  // we control when to install
 
   autoUpdater.on('update-available', (info) => {
@@ -516,9 +516,20 @@ function setupAutoUpdater() {
     }
   })
 
+  autoUpdater.on('error', (err) => {
+    console.warn('Auto-updater error:', err.message)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-error', { message: err.message })
+    }
+  })
+
   // Check once on startup only
   autoUpdater.checkForUpdates().catch(e => console.warn('Update check failed:', e))
 }
+
+ipcMain.on('start-download', () => {
+  autoUpdater.downloadUpdate().catch(e => console.warn('Download failed:', e))
+})
 
 ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall(false, true)

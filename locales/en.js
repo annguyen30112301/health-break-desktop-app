@@ -212,11 +212,15 @@ module.exports = {
 
   update: {
     available:      (v) => `Update available — v${v}`,
-    downloading:    'Downloading in background…',
+    availableSub:   'A new version is ready to download.',
+    downloadBtn:    'Download',
+    downloading:    'Downloading…',
     downloadingPct: (p) => `Downloading… ${p}%`,
     ready:          (v) => `v${v} ready to install`,
-    readySub:       'Restart the app to apply the update',
+    readySub:       'Restart the app to apply the update.',
     installBtn:     'Restart & Update',
+    downloadError:  'Download failed. Check your connection.',
+    retryBtn:       'Retry',
   },
 
   version: {

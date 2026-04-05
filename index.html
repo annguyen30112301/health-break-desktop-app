@@ -113,8 +113,15 @@
       margin-bottom: 14px;
       font-size: 12px;
       color: #2e7d32;
+      transition: background 0.2s, border-color 0.2s;
     }
     #update-banner.visible { display: flex; }
+    #update-banner.update-error {
+      background: #fff3e0;
+      border-color: #ffcc80;
+      color: #e65100;
+    }
+    #update-banner.update-error .update-subtext { color: #ef6c00; }
     #update-banner .update-icon { font-size: 18px; flex-shrink: 0; }
     #update-banner .update-text { flex: 1; font-weight: 600; }
     #update-banner .update-subtext { font-size: 11px; font-weight: 400; color: #4caf50; }
@@ -127,6 +134,8 @@
     }
     .btn-update-install:hover { background: #43A047; }
     .btn-update-install:disabled { background: #a5d6a7; cursor: default; }
+    .btn-update-install.retry { background: #ef6c00; }
+    .btn-update-install.retry:hover { background: #e64a19; }
     .btn-update-dismiss {
       background: none; border: none;
       color: #81c784; font-size: 16px; cursor: pointer; flex-shrink: 0; line-height: 1;
@@ -834,7 +843,7 @@
       <div id="update-banner-title"></div>
       <div class="update-subtext" id="update-banner-sub"></div>
     </div>
-    <button class="btn-update-install" id="btn-update-install" onclick="handleUpdateInstall()"></button>
+    <button class="btn-update-install" id="btn-update-install" onclick="handleUpdateBtn()"></button>
     <button class="btn-update-dismiss" onclick="dismissUpdateBanner()" title="Dismiss">✕</button>
   </div>
 </div>
@@ -2266,52 +2275,89 @@
   // ────────────────────────────────────────────────────────────────────────
 
   // ── Auto-updater ──────────────────────────────────────────────────────────
-  let _updateReady = false
+  // States: 'available' | 'downloading' | 'ready' | 'error'
+  let _updateState   = null
+  let _updateVersion = null
 
-  function showUpdateBanner(title, sub, btnLabel, ready) {
-    _updateReady = ready
-    document.getElementById('update-banner-title').textContent = title
-    document.getElementById('update-banner-sub').textContent   = sub
-    const btn = document.getElementById('btn-update-install')
-    btn.textContent = btnLabel
-    btn.disabled    = !ready
-    document.getElementById('update-banner').classList.add('visible')
+  function _applyUpdateBanner() {
+    const loc     = locale.update
+    const banner  = document.getElementById('update-banner')
+    const title   = document.getElementById('update-banner-title')
+    const sub     = document.getElementById('update-banner-sub')
+    const btn     = document.getElementById('btn-update-install')
+    const icon    = banner.querySelector('.update-icon')
+
+    banner.classList.remove('update-error')
+    btn.classList.remove('retry')
+
+    if (_updateState === 'available') {
+      icon.textContent    = '🔄'
+      title.textContent   = loc.available(_updateVersion)
+      sub.textContent     = loc.availableSub
+      btn.textContent     = loc.downloadBtn
+      btn.disabled        = false
+    } else if (_updateState === 'downloading') {
+      icon.textContent    = '⬇️'
+      title.textContent   = loc.available(_updateVersion)
+      sub.textContent     = loc.downloading
+      btn.textContent     = loc.downloading
+      btn.disabled        = true
+    } else if (_updateState === 'ready') {
+      icon.textContent    = '✅'
+      title.textContent   = loc.ready(_updateVersion)
+      sub.textContent     = loc.readySub
+      btn.textContent     = loc.installBtn
+      btn.disabled        = false
+    } else if (_updateState === 'error') {
+      icon.textContent    = '⚠️'
+      title.textContent   = loc.available(_updateVersion)
+      sub.textContent     = loc.downloadError
+      btn.textContent     = loc.retryBtn
+      btn.disabled        = false
+      banner.classList.add('update-error')
+      btn.classList.add('retry')
+    }
+
+    banner.classList.add('visible')
   }
 
   function dismissUpdateBanner() {
     document.getElementById('update-banner').classList.remove('visible')
   }
 
-  function handleUpdateInstall() {
-    if (!_updateReady) return
-    ipcRenderer.send('install-update')
+  function handleUpdateBtn() {
+    if (_updateState === 'available' || _updateState === 'error') {
+      _updateState = 'downloading'
+      _applyUpdateBanner()
+      ipcRenderer.send('start-download')
+    } else if (_updateState === 'ready') {
+      ipcRenderer.send('install-update')
+    }
   }
 
   ipcRenderer.on('update-available', (_, info) => {
-    const loc = locale.update
-    showUpdateBanner(
-      loc.available(info.version),
-      loc.downloading,
-      loc.installBtn,
-      false
-    )
+    _updateVersion = info.version
+    _updateState   = 'available'
+    _applyUpdateBanner()
   })
 
   ipcRenderer.on('update-progress', (_, pct) => {
-    const loc = locale.update
-    const btn = document.getElementById('btn-update-install')
-    if (btn) btn.textContent = `${Math.round(pct)}%`
-    document.getElementById('update-banner-sub').textContent = loc.downloadingPct(Math.round(pct))
+    const rounded = Math.round(pct)
+    document.getElementById('update-banner-sub').textContent =
+      locale.update.downloadingPct(rounded)
+    document.getElementById('btn-update-install').textContent =
+      `${rounded}%`
   })
 
   ipcRenderer.on('update-downloaded', (_, info) => {
-    const loc = locale.update
-    showUpdateBanner(
-      loc.ready(info.version),
-      loc.readySub,
-      loc.installBtn,
-      true
-    )
+    _updateVersion = info.version
+    _updateState   = 'ready'
+    _applyUpdateBanner()
+  })
+
+  ipcRenderer.on('update-error', () => {
+    _updateState = 'error'
+    _applyUpdateBanner()
   })
   // ────────────────────────────────────────────────────────────────────────
 

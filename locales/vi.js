@@ -212,11 +212,15 @@ module.exports = {
 
   update: {
     available:      (v) => `Có phiên bản mới — v${v}`,
-    downloading:    'Đang tải về nền…',
+    availableSub:   'Nhấn "Tải về" để tải bản cập nhật.',
+    downloadBtn:    'Tải về',
+    downloading:    'Đang tải về…',
     downloadingPct: (p) => `Đang tải… ${p}%`,
     ready:          (v) => `v${v} đã sẵn sàng cài đặt`,
-    readySub:       'Khởi động lại ứng dụng để áp dụng bản cập nhật',
+    readySub:       'Khởi động lại ứng dụng để áp dụng bản cập nhật.',
     installBtn:     'Khởi động lại & Cập nhật',
+    downloadError:  'Tải về thất bại. Kiểm tra kết nối mạng.',
+    retryBtn:       'Thử lại',
   },
 
   version: {
