@@ -40,6 +40,10 @@ async function signInWithCredential(_auth, credential) {
   })
 }
 
+async function signInAnonymously(_auth) {
+  return ipcRenderer.invoke('firebase-sign-in-anonymous')
+}
+
 async function signOut(_auth) {
   return ipcRenderer.invoke('firebase-sign-out')
 }
@@ -105,6 +109,6 @@ async function syncHistoryEntry(uid, todayEntry) {
 
 module.exports = {
   auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-  GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
+  GoogleAuthProvider, signInWithCredential, signInAnonymously, signOut, onAuthStateChanged,
   doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback, deleteAccount,
 }

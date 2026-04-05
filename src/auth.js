@@ -120,15 +120,17 @@ function parseCallbackUrl(urlString) {
  * Called on app launch to silently restore the session without re-prompting the user.
  * @returns {Promise<{ access_token: string, id_token: string }>}
  */
-async function refreshAccessToken(refreshToken, clientId) {
+async function refreshAccessToken(refreshToken, clientId, clientSecret) {
+  const params = {
+    client_id:     clientId,
+    grant_type:    'refresh_token',
+    refresh_token: refreshToken,
+  }
+  if (clientSecret) params.client_secret = clientSecret
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id:     clientId,
-      grant_type:    'refresh_token',
-      refresh_token: refreshToken,
-    }),
+    body: new URLSearchParams(params),
   })
   const data = await response.json()
   if (!response.ok) {

@@ -5,6 +5,7 @@ const {
   generatePKCE,
   buildGoogleAuthUrl,
   parseCallbackUrl,
+  refreshAccessToken,
 } = require('../src/auth')
 
 // ── generatePKCE ──────────────────────────────────────────────────────────────
@@ -166,5 +167,67 @@ describe('parseCallbackUrl', () => {
     const url = 'healthbreak://oauth/callback?code=loopback-code&state=loopback-state'
     const result = parseCallbackUrl(url)
     expect(result).toEqual({ code: 'loopback-code', state: 'loopback-state' })
+  })
+})
+
+// ── refreshAccessToken ────────────────────────────────────────────────────────
+
+describe('refreshAccessToken', () => {
+  afterEach(() => { global.fetch = undefined })
+
+  function mockFetch(body, ok = true, status = 200) {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok,
+      status,
+      json: () => Promise.resolve(body),
+    })
+  }
+
+  function capturedBody() {
+    const raw = global.fetch.mock.calls[0][1].body
+    return Object.fromEntries(new URLSearchParams(raw))
+  }
+
+  it('sends client_id, grant_type, and refresh_token', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await refreshAccessToken('rtoken', 'client-id')
+    const body = capturedBody()
+    expect(body.client_id).toBe('client-id')
+    expect(body.grant_type).toBe('refresh_token')
+    expect(body.refresh_token).toBe('rtoken')
+  })
+
+  it('does not include client_secret when omitted', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await refreshAccessToken('rtoken', 'client-id')
+    expect(capturedBody()).not.toHaveProperty('client_secret')
+  })
+
+  it('includes client_secret when provided', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await refreshAccessToken('rtoken', 'client-id', 'secret-xyz')
+    expect(capturedBody().client_secret).toBe('secret-xyz')
+  })
+
+  it('returns the parsed token response', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it', expires_in: 3600 })
+    const result = await refreshAccessToken('rtoken', 'client-id')
+    expect(result).toEqual({ access_token: 'at', id_token: 'it', expires_in: 3600 })
+  })
+
+  it('throws with error_description when response is not ok', async () => {
+    mockFetch({ error: 'invalid_grant', error_description: 'Token has been expired' }, false, 400)
+    await expect(refreshAccessToken('bad-token', 'client-id')).rejects.toThrow('Token has been expired')
+  })
+
+  it('throws with error code when error_description is absent', async () => {
+    mockFetch({ error: 'invalid_client' }, false, 401)
+    await expect(refreshAccessToken('t', 'c')).rejects.toThrow('invalid_client')
+  })
+
+  it('posts to the correct Google token endpoint', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await refreshAccessToken('rtoken', 'client-id')
+    expect(global.fetch.mock.calls[0][0]).toBe('https://oauth2.googleapis.com/token')
   })
 })

@@ -1711,12 +1711,12 @@
   // ── Auth / Cloud Sync ─────────────────────────────────────────────────────
   // Wrapped in try-catch so a firebase load failure never breaks the rest of the app
   let auth = null, db = null, IS_CONFIGURED = false, GOOGLE_CLIENT_ID = '', GOOGLE_CLIENT_SECRET = ''
-  let GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged
+  let GoogleAuthProvider, signInWithCredential, signInAnonymously, signOut, onAuthStateChanged
   let doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback, deleteAccount
   try {
     ;({
       auth, db, IS_CONFIGURED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-      GoogleAuthProvider, signInWithCredential, signOut, onAuthStateChanged,
+      GoogleAuthProvider, signInWithCredential, signInAnonymously, signOut, onAuthStateChanged,
       doc, getDoc, setDoc, serverTimestamp, syncHistoryEntry, analyticsAgg, submitFeedback, deleteAccount,
     } = require('./src/firebase.js'))
   } catch (e) {
@@ -2012,8 +2012,9 @@
     btn.disabled    = true
     btn.textContent = locale.feedback.sending
     try {
+      const user = currentUser || await signInAnonymously(auth)
       const { version } = require('./package.json')
-      await submitFeedback(currentUser.uid, text, version, currentLang, process.platform)
+      await submitFeedback(user.uid, text, version, currentLang, process.platform)
       closeFeedbackDialog()
       showToast(locale.feedback.sent, 3000)
     } catch (e) {
@@ -2024,9 +2025,9 @@
     }
   }
 
-  // Show feedback card only when signed in
+  // Show feedback card for all users when Firebase is configured
   function updateFeedbackVisibility() {
-    document.getElementById('card-feedback').style.display = currentUser ? 'block' : 'none'
+    document.getElementById('card-feedback').style.display = IS_CONFIGURED ? 'block' : 'none'
   }
 
   // ── Firebase auth state listener ───────────────────────────────────────────
@@ -2057,7 +2058,7 @@
             if (stored) {
               const { refreshToken } = JSON.parse(stored)
               if (refreshToken) {
-                const tokens = await refreshAccessToken(refreshToken, GOOGLE_CLIENT_ID)
+                const tokens = await refreshAccessToken(refreshToken, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
                 const credential = GoogleAuthProvider.credential(tokens.id_token, tokens.access_token)
                 await signInWithCredential(auth, credential)
                 // onAuthStateChanged will fire again with the restored user

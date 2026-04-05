@@ -24,14 +24,22 @@ service cloud.firestore {
       allow read:  if false;
     }
 
-    // Feedback — users can submit but not read/edit others
+    // Feedback — any authenticated user (including anonymous) can submit
+    // Rate limit: max 1 submission per 5 minutes per uid (enforced via ratelimit collection)
     match /feedback/{docId} {
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.text is string
                     && request.resource.data.text.size() >= 1
-                    && request.resource.data.text.size() <= 500;
+                    && request.resource.data.text.size() <= 500
+                    && (!exists(/databases/$(database)/documents/ratelimit/$(request.auth.uid))
+                        || request.time > get(/databases/$(database)/documents/ratelimit/$(request.auth.uid)).data.lastFeedback + duration.value(5, 'm'));
       allow read, update, delete: if false;
+    }
+
+    // Rate limit tracker — each user can only read/write their own entry
+    match /ratelimit/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

@@ -386,11 +386,12 @@ try {
   const {
     getAuth, GoogleAuthProvider,
     signInWithCredential: fbSignIn,
+    signInAnonymously: fbSignInAnonymously,
     signOut: fbSignOut,
     onAuthStateChanged,
     deleteUser,
   } = require('firebase/auth')
-  const { getFirestore, doc, getDoc, setDoc, serverTimestamp, increment, addDoc, collection, getDocs, deleteDoc, writeBatch } = require('firebase/firestore')
+  const { getFirestore, doc, getDoc, setDoc, serverTimestamp, increment, collection, getDocs, deleteDoc, writeBatch } = require('firebase/firestore')
   const _fbCfg = require('./src/firebase-config.js')
 
   const fbApp  = getApps().length ? getApp() : initializeApp(_fbCfg.firebase)
@@ -409,6 +410,11 @@ try {
   ipcMain.handle('firebase-sign-in', async (_event, { idToken, accessToken }) => {
     const cred = GoogleAuthProvider.credential(idToken, accessToken)
     const uc   = await fbSignIn(fbAuth, cred)
+    return _serializeUser(uc.user)
+  })
+
+  ipcMain.handle('firebase-sign-in-anonymous', async () => {
+    const uc = await fbSignInAnonymously(fbAuth)
     return _serializeUser(uc.user)
   })
 
@@ -467,17 +473,18 @@ try {
   })
 
   ipcMain.handle('firebase-submit-feedback', async (_event, { uid, text, appVersion, lang, platform }) => {
-    await addDoc(collection(fbDb, 'feedback'), {
-      uid, text, appVersion, lang, platform,
-      createdAt: serverTimestamp(),
-    })
+    const batch       = writeBatch(fbDb)
+    const feedbackRef = doc(collection(fbDb, 'feedback'))
+    batch.set(feedbackRef, { uid, text, appVersion, lang, platform, createdAt: serverTimestamp() })
+    batch.set(doc(fbDb, 'ratelimit', uid), { lastFeedback: serverTimestamp() })
+    await batch.commit()
   })
 
 } catch (e) {
   console.error('Firebase main-process init failed:', e)
   _fbCurrentUser = null
   // Stub handlers so renderer invoke() calls don't hang
-  ;['firebase-sign-in', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc', 'firebase-sync-history', 'firebase-analytics-agg', 'firebase-submit-feedback', 'firebase-delete-account'].forEach(ch => {
+  ;['firebase-sign-in', 'firebase-sign-in-anonymous', 'firebase-sign-out', 'firebase-get-doc', 'firebase-set-doc', 'firebase-sync-history', 'firebase-analytics-agg', 'firebase-submit-feedback', 'firebase-delete-account'].forEach(ch => {
     try { ipcMain.handle(ch, () => null) } catch {}
   })
 }
