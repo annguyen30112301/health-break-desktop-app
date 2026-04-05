@@ -29,6 +29,7 @@ let currentLocale = _LOCALES.en
 
 let mainWindow
 let tray
+let isQuitting = false
 let popupWindow = null
 let popupQueue = []   // hàng đợi các popup chưa hiển thị
 let isShowingPopup = false
@@ -103,6 +104,7 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false)
 
   mainWindow.on('close', (e) => {
+    if (isQuitting) return
     e.preventDefault()
     mainWindow.hide()
   })
@@ -507,11 +509,8 @@ function setupAutoUpdater() {
     }
   })
 
-  // Check on startup, then every 4 hours
+  // Check once on startup only
   autoUpdater.checkForUpdates().catch(e => console.warn('Update check failed:', e))
-  setInterval(() => {
-    autoUpdater.checkForUpdates().catch(e => console.warn('Update check failed:', e))
-  }, 4 * 60 * 60 * 1000)
 }
 
 ipcMain.on('install-update', () => {
@@ -529,4 +528,8 @@ app.whenReady().then(() => {
   if (protoUrl) handleOAuthCallback(protoUrl)
 })
 
-app.on('window-all-closed', (e) => e.preventDefault())
+app.on('before-quit', () => { isQuitting = true })
+
+app.on('window-all-closed', (e) => {
+  if (!isQuitting) e.preventDefault()
+})
