@@ -9,7 +9,7 @@
     "setup:wincodecsign": "node scripts/setup-wincodecsign.js",
     "build:win": "npm test && npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
     "build:win:dir": "npm run setup:wincodecsign && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win dir",
-    "build:mac": "electron-builder --mac",
+    "build:mac": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
     "build:mac:notarize": "APPLE_ID=$APPLE_ID APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID=$APPLE_TEAM_ID electron-builder --mac",
     "build": "electron-builder"
   },
