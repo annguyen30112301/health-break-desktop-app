@@ -823,6 +823,20 @@
     </div>
     <div class="card-desc" id="feedback-card-desc"></div>
   </div>
+
+  <!-- Version info -->
+  <div class="card" id="card-version">
+    <div class="card-top">
+      <div class="card-icon">ℹ️</div>
+      <div class="card-name" id="version-card-name">Version</div>
+      <span id="version-display" style="font-size:12px;color:#888;font-weight:600;"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+      <div class="card-desc" id="version-card-desc" style="flex:1;margin-bottom:0;"></div>
+      <button id="btn-check-update" onclick="checkForUpdates()"
+        style="font-size:11px;color:#4CAF50;background:none;border:1px solid #4CAF50;border-radius:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;"></button>
+    </div>
+  </div>
 </div>
 
 <div class="status-bar" id="status"></div>
@@ -1063,6 +1077,9 @@
 
     // Update feedback card + dialog strings
     if (typeof applyFeedbackLocale === 'function') applyFeedbackLocale()
+
+    // Update version card strings
+    if (typeof applyVersionLocale === 'function') applyVersionLocale()
   }
   // ────────────────────────────────────────────────────────────────────────
 
@@ -1921,6 +1938,43 @@
   }
 
   // ── Feedback ──────────────────────────────────────────────────────────────
+  // ── Version card ──────────────────────────────────────────────────────────
+  const { version: _appVersion } = require('./package.json')
+
+  function applyVersionLocale() {
+    const loc = locale.version
+    document.getElementById('version-card-name').textContent = loc.cardName
+    document.getElementById('btn-check-update').textContent  = loc.checkBtn
+    document.getElementById('version-display').textContent   = `v${_appVersion}`
+    document.getElementById('version-card-desc').textContent = ''
+  }
+
+  async function checkForUpdates() {
+    const loc = locale.version
+    const btn = document.getElementById('btn-check-update')
+    const desc = document.getElementById('version-card-desc')
+    btn.disabled = true
+    btn.textContent = loc.checking
+    desc.textContent = ''
+    const result = await ipcRenderer.invoke('check-for-updates')
+    btn.disabled = false
+    btn.textContent = loc.checkBtn
+    if (result.devMode) {
+      desc.textContent = loc.devMode
+    } else if (result.error) {
+      desc.textContent = result.error
+    } else {
+      // update-available / update-downloaded events will show the banner;
+      // if neither fires after a short delay, assume up to date
+      setTimeout(() => {
+        if (!document.getElementById('update-banner').classList.contains('visible')) {
+          desc.textContent = loc.upToDate
+        }
+      }, 5000)
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   function applyFeedbackLocale() {
     const loc = locale.feedback
     document.getElementById('feedback-card-name').textContent  = loc.cardName

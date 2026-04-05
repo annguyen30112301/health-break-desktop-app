@@ -219,6 +219,14 @@ module.exports = {
     installBtn:     'Khởi động lại & Cập nhật',
   },
 
+  version: {
+    cardName:    'Phiên bản',
+    checkBtn:    'Kiểm tra cập nhật',
+    checking:    'Đang kiểm tra…',
+    upToDate:    'Đang dùng bản mới nhất',
+    devMode:     'Dev mode — tắt cập nhật tự động',
+  },
+
   feedback: {
     cardName:     'Gửi phản hồi',
     cardDesc:     'Giúp chúng tôi cải thiện HealthBreak',

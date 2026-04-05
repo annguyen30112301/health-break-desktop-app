@@ -516,6 +516,16 @@ function setupAutoUpdater() {
 ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall(false, true)
 })
+
+ipcMain.handle('check-for-updates', async () => {
+  if (!app.isPackaged) return { devMode: true }
+  try {
+    await autoUpdater.checkForUpdates()
+    return { ok: true }
+  } catch (e) {
+    return { error: e.message }
+  }
+})
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {

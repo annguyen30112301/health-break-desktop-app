@@ -219,6 +219,14 @@ module.exports = {
     installBtn:     'Restart & Update',
   },
 
+  version: {
+    cardName:    'Version',
+    checkBtn:    'Check for updates',
+    checking:    'Checking…',
+    upToDate:    'Up to date',
+    devMode:     'Dev mode — updates disabled',
+  },
+
   feedback: {
     cardName:     'Send Feedback',
     cardDesc:     'Help us improve HealthBreak',
