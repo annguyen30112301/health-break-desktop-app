@@ -5,11 +5,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm install   # Install dependencies
-npm start     # Run the Electron app (executes: electron .)
+npm install        # Install dependencies
+npm start          # Run the Electron app (executes: electron .)
+npm test           # Run Jest test suite
+npm run build:win  # Build Windows installer (runs tests first)
+npm run build:mac  # Build macOS DMG (must run on macOS)
 ```
 
-There are no test or lint scripts configured.
+## First-time Setup
+
+`src/firebase-config.js` is gitignored and must be created manually:
+
+```js
+'use strict';
+module.exports = {
+  firebase: {
+    apiKey:            'YOUR_API_KEY',
+    authDomain:        'YOUR_PROJECT_ID.firebaseapp.com',
+    projectId:         'YOUR_PROJECT_ID',
+    storageBucket:     'YOUR_PROJECT_ID.appspot.com',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+    appId:             'YOUR_APP_ID',
+  },
+  googleClientId:     'YOUR_CLIENT_ID.apps.googleusercontent.com',
+  googleClientSecret: 'YOUR_CLIENT_SECRET',
+};
+```
+
+Get values from:
+- **Firebase credentials**: Firebase Console → Project Settings → Your Apps → SDK setup
+- **Google OAuth**: Google Cloud Console → APIs & Services → Credentials → Desktop app client
+
+## Build Process
+
+`npm run build:win` runs these steps in order:
+1. `npm test` — all Jest tests must pass
+2. `scripts/setup-wincodecsign.js` — cache Windows code signing tools
+3. `electron-builder --win` — produce `dist/HealthBreak Setup X.Y.Z.exe`
+
+Output: `dist/HealthBreak Setup <version>.exe` + `.blockmap`
+
+## Pre-merge Hook
+
+A Claude Code hook runs `scripts/pre-merge-check.js` before every `git push`. It requires `REVIEW_REPORT.md` to exist with verdict **APPROVED** or **APPROVED WITH NOTES**.
+
+Run `/review-code` to generate `REVIEW_REPORT.md` before pushing.
+
+`REVIEW_REPORT.md` is gitignored — must be generated on each machine.
 
 ## Architecture
 
@@ -47,3 +89,10 @@ Three reminders are defined with interval constraints in `index.html`:
 ### Persistence
 
 All user settings (intervals, enabled/disabled toggles, testing mode state) are stored in `localStorage` within the renderer process. `main.js` holds no persistent state across app restarts.
+
+### Firebase / Auth
+
+- `src/firebase.js` — initializes Firebase app, exports auth/db helpers and `IS_CONFIGURED` flag
+- `src/auth.js` — PKCE OAuth helpers: `generatePKCE`, `buildGoogleAuthUrl`, `exchangeCodeForTokens`, `parseCallbackUrl`, `refreshAccessToken`
+- Google OAuth flow: renderer starts local HTTP server → opens browser → receives callback → exchanges code for tokens → signs into Firebase with credential
+- Anonymous auth: used for feedback submission without login; anonymous users are excluded from migration dialog and account UI
