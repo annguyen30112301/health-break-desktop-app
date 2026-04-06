@@ -4,6 +4,7 @@ const crypto = require('crypto')
 const {
   generatePKCE,
   buildGoogleAuthUrl,
+  exchangeCodeForTokens,
   parseCallbackUrl,
   refreshAccessToken,
 } = require('../src/auth')
@@ -229,5 +230,88 @@ describe('refreshAccessToken', () => {
     mockFetch({ access_token: 'at', id_token: 'it' })
     await refreshAccessToken('rtoken', 'client-id')
     expect(global.fetch.mock.calls[0][0]).toBe('https://oauth2.googleapis.com/token')
+  })
+})
+
+// ── exchangeCodeForTokens ─────────────────────────────────────────────────────
+
+describe('exchangeCodeForTokens', () => {
+  afterEach(() => { global.fetch = undefined })
+
+  function mockFetch(body, ok = true, status = 200) {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok,
+      status,
+      json: () => Promise.resolve(body),
+    })
+  }
+
+  function capturedBody() {
+    const raw = global.fetch.mock.calls[0][1].body
+    return Object.fromEntries(new URLSearchParams(raw))
+  }
+
+  it('sends required params: code, client_id, redirect_uri, grant_type, code_verifier', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await exchangeCodeForTokens('auth-code', 'verifier-abc', 'client-id', 'http://127.0.0.1:9999')
+    const body = capturedBody()
+    expect(body.code).toBe('auth-code')
+    expect(body.client_id).toBe('client-id')
+    expect(body.redirect_uri).toBe('http://127.0.0.1:9999')
+    expect(body.grant_type).toBe('authorization_code')
+    expect(body.code_verifier).toBe('verifier-abc')
+  })
+
+  it('does not include client_secret when omitted', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost')
+    expect(capturedBody()).not.toHaveProperty('client_secret')
+  })
+
+  it('includes client_secret when provided', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost', 'GOCSPX-secret')
+    expect(capturedBody().client_secret).toBe('GOCSPX-secret')
+  })
+
+  it('returns parsed token response on success', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it', refresh_token: 'rt', expires_in: 3600 })
+    const result = await exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost')
+    expect(result).toEqual({ access_token: 'at', id_token: 'it', refresh_token: 'rt', expires_in: 3600 })
+  })
+
+  it('throws with error_description when response is not ok', async () => {
+    mockFetch({ error: 'invalid_grant', error_description: 'Code has already been used' }, false, 400)
+    await expect(
+      exchangeCodeForTokens('used-code', 'verifier', 'client-id', 'http://localhost')
+    ).rejects.toThrow('Code has already been used')
+  })
+
+  it('throws with error code when error_description is absent', async () => {
+    mockFetch({ error: 'invalid_client' }, false, 401)
+    await expect(
+      exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost')
+    ).rejects.toThrow('invalid_client')
+  })
+
+  it('throws with status message when both error fields are absent', async () => {
+    mockFetch({}, false, 500)
+    await expect(
+      exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost')
+    ).rejects.toThrow('Token exchange failed (500)')
+  })
+
+  it('posts to the correct Google token endpoint', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost')
+    expect(global.fetch.mock.calls[0][0]).toBe('https://oauth2.googleapis.com/token')
+  })
+
+  it('uses POST method with correct content-type', async () => {
+    mockFetch({ access_token: 'at', id_token: 'it' })
+    await exchangeCodeForTokens('code', 'verifier', 'client-id', 'http://localhost')
+    const options = global.fetch.mock.calls[0][1]
+    expect(options.method).toBe('POST')
+    expect(options.headers['Content-Type']).toBe('application/x-www-form-urlencoded')
   })
 })
