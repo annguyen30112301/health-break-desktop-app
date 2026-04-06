@@ -244,5 +244,6 @@ module.exports = {
     tooShort:     'Vui lòng nhập ít nhất 1 ký tự.',
     tooLong:      'Phản hồi không được vượt quá 500 ký tự.',
     error:        'Gửi thất bại. Vui lòng thử lại.',
+    anonNote:     'Người chưa đăng nhập chỉ có thể gửi phản hồi 1 lần mỗi 5 phút.',
   },
 };

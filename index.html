@@ -895,6 +895,7 @@
   <div class="dialog">
     <div class="dialog-title" id="feedback-title"></div>
     <div class="dialog-desc"  id="feedback-desc"></div>
+    <div id="feedback-anon-note" style="display:none;font-size:11px;color:#e53935;margin-top:4px;"></div>
     <textarea id="feedback-text" maxlength="500" rows="4"
       style="width:100%;box-sizing:border-box;margin:12px 0 4px;padding:8px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;resize:none;font-family:inherit;"
       oninput="updateFeedbackCount()"></textarea>
@@ -1738,6 +1739,7 @@
   let currentUser    = null   // Firebase User object or null
   let _pkceSession   = null   // { codeVerifier, state } for the in-flight OAuth attempt
   let _oauthTimeout  = null   // setTimeout handle to reset button if callback never arrives
+  let _oauthInProgress = false // prevents renderAuthUI from resetting button during sign-in
 
   // ── Toast ──────────────────────────────────────────────────────────────────
   let _toastTimer = null
@@ -1767,7 +1769,7 @@
       return
     }
 
-    if (currentUser) {
+    if (currentUser && currentUser.email) {
       badgeEl.textContent = loc.badgeOnline
       badgeEl.className   = 'auth-badge online'
       descEl.textContent  = loc.cardDescOn(currentUser.email)
@@ -1778,18 +1780,19 @@
       badgeEl.textContent = loc.badgeOffline
       badgeEl.className   = 'auth-badge offline'
       descEl.textContent  = loc.cardDescOff
-      btnEl.textContent   = loc.btnSignIn
-      btnEl.className     = 'btn-auth'
-      btnEl.disabled      = false
+      if (!_oauthInProgress) {
+        btnEl.textContent   = loc.btnSignIn
+        btnEl.className     = 'btn-auth'
+        btnEl.disabled      = false
+      }
     }
     if (typeof updateFeedbackVisibility  === 'function') updateFeedbackVisibility()
     if (typeof updateAccountVisibility   === 'function') updateAccountVisibility()
     // Avatar in header
     const avatarEl = document.getElementById('header-avatar')
     if (avatarEl) {
-      if (currentUser) {
-        const initial = (currentUser.email || '?')[0].toUpperCase()
-        avatarEl.textContent    = initial
+      if (currentUser && currentUser.email) {
+        avatarEl.textContent    = currentUser.email[0].toUpperCase()
         avatarEl.title          = currentUser.email
         avatarEl.style.display  = 'flex'
       } else {
@@ -1817,8 +1820,8 @@
     if (!IS_CONFIGURED) return
     const btn = document.getElementById('btn-auth')
 
-    if (currentUser) {
-      // Sign out
+    if (currentUser && currentUser.email) {
+      // Sign out real user
       try {
         await signOut(auth)
         await ipcRenderer.invoke('safe-storage-delete')
@@ -1827,6 +1830,12 @@
         console.error('Sign-out error:', e)
       }
       return
+    }
+
+    // If anonymous session exists, sign out silently then proceed with Google sign-in
+    _oauthInProgress = true
+    if (currentUser && !currentUser.email) {
+      try { await signOut(auth) } catch (_) {}
     }
 
     // Start sign-in
@@ -1844,6 +1853,7 @@
     // Reset button after 90s if OAuth callback never arrives (e.g. user closed browser)
     _oauthTimeout = setTimeout(() => {
       _pkceSession = null
+      _oauthInProgress = false
       ipcRenderer.invoke('oauth-cancel-server').catch(() => {})
       if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
     }, 90 * 1000)
@@ -1887,9 +1897,11 @@
     } catch (e) {
       console.error('OAuth callback error:', e)
       _pkceSession = null
+      _oauthInProgress = false
       showToast(locale.auth.signInError, 4000)
       if (btn) { btn.disabled = false; btn.textContent = locale.auth.btnSignIn }
     }
+    _oauthInProgress = false
   })
 
   // ── Account ────────────────────────────────────────────────────────────────
@@ -1911,7 +1923,7 @@
   }
 
   function updateAccountVisibility() {
-    const show = !!currentUser
+    const show = !!(currentUser && currentUser.email)
     document.getElementById('card-account').style.display = show ? 'block' : 'none'
     if (show) applyAccountLocale()
   }
@@ -2000,6 +2012,7 @@
     document.getElementById('feedback-count').textContent = '0 / 500'
     document.getElementById('btn-feedback-send').disabled = false
     document.getElementById('btn-feedback-send').textContent = locale.feedback.btnSend
+    document.getElementById('feedback-anon-note').style.display = 'none'
     document.getElementById('feedback-backdrop').style.display = 'flex'
     document.getElementById('feedback-text').focus()
   }
@@ -2030,7 +2043,13 @@
       console.error('Feedback error:', e)
       btn.disabled    = false
       btn.textContent = locale.feedback.btnSend
-      showToast(locale.feedback.error, 3000)
+      if (e && (e.code === 'permission-denied' || (e.message && e.message.includes('permission-denied')))) {
+        const noteEl = document.getElementById('feedback-anon-note')
+        noteEl.textContent = locale.feedback.anonNote
+        noteEl.style.display = 'block'
+      } else {
+        showToast(locale.feedback.error, 3000)
+      }
     }
   }
 
@@ -2041,6 +2060,7 @@
 
   // ── Firebase auth state listener ───────────────────────────────────────────
   let _authInitialized = false
+  let _isSilentRestore = false
 
   function initAuth() {
     if (!IS_CONFIGURED || !auth) {
@@ -2049,6 +2069,7 @@
     }
 
     onAuthStateChanged(auth, async (user) => {
+      const previousUser = currentUser
       const wasNull = !currentUser
       currentUser = user
 
@@ -2069,6 +2090,7 @@
               if (refreshToken) {
                 const tokens = await refreshAccessToken(refreshToken, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
                 const credential = GoogleAuthProvider.credential(tokens.id_token, tokens.access_token)
+                _isSilentRestore = true
                 await signInWithCredential(auth, credential)
                 // onAuthStateChanged will fire again with the restored user
               }
@@ -2081,22 +2103,29 @@
       }
 
       if (user && wasNull) {
-        // Fresh login just completed
-        await handleFirstLoginWithUser(user, true)
+        // Fresh login just completed (or silent restore — treat restore as returning session)
+        const isFresh = !_isSilentRestore
+        _isSilentRestore = false
+        await handleFirstLoginWithUser(user, isFresh)
       } else if (!user && !wasNull) {
-        // Signed out
-        localStorage.removeItem(AUTH_MODE_KEY)
+        // Only clear sync state when a real user (with email) signs out
+        if (previousUser && previousUser.email) {
+          localStorage.removeItem(AUTH_MODE_KEY)
+        }
       }
     })
   }
 
   // ── First login / restore logic ────────────────────────────────────────────
   async function handleFirstLoginWithUser(user, isFreshLogin) {
+    if (!user.email) return  // anonymous or unidentifiable user — skip migration
     try {
       const cloudSettings = await loadSettingsFromFirestore(user.uid)
       const hasLocal = !!localStorage.getItem(STORAGE_KEY)
 
-      if (isFreshLogin) {
+      const alreadySynced = localStorage.getItem(AUTH_MODE_KEY) === 'online'
+
+      if (isFreshLogin && !alreadySynced) {
         if (hasLocal && !cloudSettings) {
           // Local data, no cloud data → offer to sync
           showMigrationDialog()

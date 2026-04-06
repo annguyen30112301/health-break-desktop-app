@@ -244,5 +244,6 @@ module.exports = {
     tooShort:     'Please write at least 1 character.',
     tooLong:      'Feedback must be 500 characters or fewer.',
     error:        'Failed to send. Please try again.',
+    anonNote:     'Guest users can only send feedback once every 5 minutes.',
   },
 };
