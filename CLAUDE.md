@@ -54,7 +54,17 @@ For any new logic added since the last release:
 2. `scripts/setup-wincodecsign.js` — cache Windows code signing tools
 3. `electron-builder --win` — produce `dist/HealthBreak Setup X.Y.Z.exe`
 
-Output: `dist/HealthBreak Setup <version>.exe` + `.blockmap`
+Output: `dist/HealthBreak Setup <version>.exe` + `.blockmap` + `latest.yml`
+
+**Step 3 — Publish to GitHub release**
+Upload all 3 files to the release (required for auto-update to work):
+```bash
+gh release upload vX.Y.Z \
+  "dist/HealthBreak Setup X.Y.Z.exe" \
+  "dist/HealthBreak Setup X.Y.Z.exe.blockmap" \
+  "dist/latest.yml"
+```
+`latest.yml` is consumed by `electron-updater` to detect new versions. Missing it causes "Cannot find latest.yml" errors in the app.
 
 ## Pre-merge Hook
 
