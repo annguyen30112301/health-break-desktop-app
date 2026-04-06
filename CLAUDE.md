@@ -38,7 +38,18 @@ Get values from:
 
 ## Build Process
 
-`npm run build:win` runs these steps in order:
+Before running the build, complete these steps in order:
+
+**Step 1 — Test coverage check (manual)**
+For any new logic added since the last release:
+- Check `tests/auth.test.js` and `tests/utils.test.js` for existing coverage
+- Testable units: pure functions exported from `src/auth.js` and `src/utils.js`
+- Non-testable (skip): renderer logic in `index.html`, Firebase/IPC calls
+- If coverage is missing → add test cases to the relevant test file first
+- If already covered → skip
+
+**Step 2 — Build**
+`npm run build:win` runs these steps automatically:
 1. `npm test` — all Jest tests must pass
 2. `scripts/setup-wincodecsign.js` — cache Windows code signing tools
 3. `electron-builder --win` — produce `dist/HealthBreak Setup X.Y.Z.exe`
